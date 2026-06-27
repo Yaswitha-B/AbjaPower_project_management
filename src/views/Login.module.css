@@ -1,0 +1,50 @@
+.gate {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.gbox {
+  width: 344px; max-width: 100%;
+  background: var(--card);
+  border-radius: 12px; padding: 32px 28px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+  text-align: center;
+}
+.gbrand { font-size: 25px; font-weight: 800; letter-spacing: .03em; margin-top: 6px }
+.gbrand b { color: var(--orange) }
+.gsub {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--steel); margin-top: 7px;
+}
+.glock {
+  width: 34px; height: 34px; margin: 0 auto 4px;
+  border: 2px solid var(--orange); border-radius: 7px; position: relative;
+}
+.glock::before {
+  content: ""; position: absolute;
+  left: 50%; top: -9px;
+  width: 16px; height: 14px;
+  border: 2px solid var(--orange); border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  transform: translateX(-50%);
+}
+.gpwd {
+  width: 100%; margin-top: 22px;
+  font: inherit; font-size: 15px;
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 11px 13px; outline: none; text-align: center;
+  background: var(--field);
+}
+.gpwd:focus { border-color: var(--blue); background: #fff }
+.gbtn {
+  width: 100%; margin-top: 12px;
+  background: var(--ink); color: #fff;
+  border: none; border-radius: 8px; padding: 12px;
+  font: inherit; font-weight: 600; font-size: 14px;
+  cursor: pointer; transition: .15s;
+}
+.gbtn:hover:not(:disabled) { background: var(--blue) }
+.gbtn:disabled { opacity: .55; cursor: default }
+.gerr { color: var(--stop); font-size: 12.5px; margin-top: 10px; min-height: 16px }
+.gnote { color: var(--steel); font-size: 11px; margin-top: 16px; line-height: 1.5 }

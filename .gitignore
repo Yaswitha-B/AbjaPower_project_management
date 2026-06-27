@@ -1,0 +1,18 @@
+node_modules/
+.env.local
+.netlify/
+.env
+
+# build output
+dist/
+
+# seed data and one-off scripts — kept in career/nxtwin/abja/analysis/scripts/
+seed-chunks/
+seed-0*.js
+seed_contacts.sql
+migrate-contacts.js
+db/_run-migration.mjs
+db_check.mjs
+db_mark_historical.mjs
+test.js
+TODO.md

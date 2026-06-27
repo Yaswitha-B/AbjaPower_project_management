@@ -1,0 +1,7 @@
+.placeholderCard { border-left: 3px solid var(--line) }
+.placeholderNotice {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--warn);
+  background: #fef9ec; border: 1px solid #f0e1a0; border-radius: 6px; padding: 7px 12px;
+}
+.noticeDot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex: 0 0 auto }

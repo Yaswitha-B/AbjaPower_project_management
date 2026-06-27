@@ -1,0 +1,204 @@
+/* ── Layout ─────────────────────────────────────────────────── */
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px }
+@media (max-width: 600px) { .wrap { padding: 0 16px } }
+
+.view { padding: 28px 0 80px; animation: fade .25s ease }
+@media (prefers-reduced-motion: reduce) { .view { animation: none } }
+@media (max-width: 600px) { .view { padding: 20px 0 60px } }
+
+.grid { display: grid; gap: 16px }
+.two   { grid-template-columns: 1fr 1fr }
+.three { grid-template-columns: 1.2fr 1fr 1fr }
+@media (max-width: 860px) { .two, .three { grid-template-columns: 1fr } }
+
+/* ── States ─────────────────────────────────────────────────── */
+.loading {
+  padding: 60px 20px; text-align: center;
+  color: var(--steel); font-family: var(--mono); font-size: 13px;
+}
+.error { padding: 40px 20px; text-align: center; color: var(--stop); font-size: 13px }
+
+/* ── Typography ─────────────────────────────────────────────── */
+.title { font-size: 22px; font-weight: 800; letter-spacing: -.015em; margin: 0 0 4px }
+@media (max-width: 480px) { .title { font-size: 19px } }
+
+.caption {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--steel); margin-bottom: 10px;
+}
+.note { font-size: 11.5px; color: var(--steel); margin-top: 10px; line-height: 1.55 }
+.note b { color: var(--ink) }
+.hint { font-size: 11.5px; color: var(--steel); font-weight: 400 }
+.hintNote { font-size: 11.5px; color: var(--steel); margin: 4px 0 }
+
+/* ── Cards ──────────────────────────────────────────────────── */
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 18px 20px 16px;
+}
+@media (max-width: 480px) { .card { padding: 14px 14px 12px; border-radius: 8px } }
+
+/* ── Navigation pills ───────────────────────────────────────── */
+.pill {
+  flex: 0 0 auto; font: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer; background: transparent; border: 1px solid var(--line);
+  color: var(--steel); border-radius: 20px; padding: 6px 13px; transition: all .14s;
+  white-space: nowrap;
+}
+.pill:hover { border-color: var(--blue2); color: var(--blue2); background: rgba(45,108,179,.05) }
+.pill.on { background: var(--ink); border-color: var(--ink); color: #fff }
+.pill.on.ov { background: var(--blue); border-color: var(--blue) }
+.pill:disabled { opacity: .4; cursor: not-allowed }
+
+/* ── KPI strip ──────────────────────────────────────────────── */
+.kpis {
+  display: grid; grid-template-columns: repeat(var(--kpi-cols, 4), 1fr);
+  gap: 1px; background: var(--line);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 28px;
+}
+.kpi { background: var(--card); padding: 16px 18px 14px }
+.lab {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--steel); line-height: 1.4;
+}
+.val {
+  font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1.05;
+  margin-top: 6px; padding-bottom: 6px; border-bottom: 2.5px solid var(--orange);
+  display: inline-block; letter-spacing: -.02em;
+}
+.warn { border-color: var(--stop) !important; color: var(--stop) }
+.sub { font-size: 11px; color: var(--steel); margin-top: 7px; line-height: 1.45 }
+@media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr) } }
+@media (max-width: 400px) { .kpis { grid-template-columns: 1fr } }
+
+/* ── Sub-tabs ───────────────────────────────────────────────── */
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px }
+
+/* ── Badges ─────────────────────────────────────────────────── */
+.badge {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 3px; white-space: nowrap;
+  letter-spacing: .03em; text-transform: uppercase;
+}
+.badgeInt      { background: #fbe7e1; color: #b23512 }
+.badgeExt      { background: #fbeecb; color: #946200 }
+.badgeCom      { background: #dde9f5; color: #1f4e79 }
+.badgeInternal { background: #e8f5ee; color: #1a6637 }
+.badgeCustomer { background: #dde9f5; color: #1f4e79 }
+.badgeSc       { background: #fbeecb; color: #946200 }
+.badgeDesign   { background: #ece8f8; color: #4a2c8c }
+.badgeMgmt     { background: #eef0f2; color: #3a4450 }
+.badgeOther    { background: #f0f0f0; color: #555 }
+
+/* ── Table numeric cell ─────────────────────────────────────── */
+.num { font-family: var(--mono); text-align: right }
+
+/* ── Blocker / data tables (BlockerTable + CuratorsPanel) ───── */
+.bkWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 4px; margin: 0 -2px }
+.bk { width: 100%; min-width: 740px; border-collapse: collapse; font-size: 12.5px }
+.bk th {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--steel); text-align: left; padding: 8px 10px;
+  border-bottom: 2px solid var(--ink); font-weight: 700; white-space: nowrap;
+  position: sticky; top: 0; background: var(--card);
+}
+.bk td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle }
+.bk tbody tr:hover td { background: #f6f8fb }
+.bk .num { font-family: var(--mono); text-align: center; white-space: nowrap }
+.empty { color: var(--steel); font-size: 13px; padding: 14px 4px }
+.bkRef { color: var(--blue); font-weight: 700; text-align: left !important; white-space: nowrap; font-family: var(--mono); font-size: 11.5px }
+.bkDate { white-space: nowrap; font-family: var(--mono); font-size: 11.5px }
+.bkDesc { min-width: 180px; max-width: 300px; font-size: 13px }
+.bkOwner { white-space: nowrap; max-width: 140px; font-size: 12.5px }
+.recurMark { color: var(--orange); margin-left: 4px }
+
+/* ── Form layout ────────────────────────────────────────────── */
+.fieldRow { margin-bottom: 14px }
+.twoCol { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+@media (max-width: 540px) { .twoCol { grid-template-columns: 1fr } }
+
+.entrySection { display: flex; flex-direction: column; gap: 4px }
+
+.addBtn {
+  font: inherit; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; background: transparent; border: 1.5px dashed var(--blue2);
+  color: var(--blue2); border-radius: 6px; cursor: pointer; transition: .12s;
+}
+.addBtn:hover { background: #e8f0fb; border-style: solid }
+
+.rmBtn {
+  flex: 0 0 auto; width: 28px; height: 28px; font-size: 16px; line-height: 1;
+  background: transparent; border: none; color: var(--steel); cursor: pointer; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+.rmBtn:hover { background: #fde9e6; color: var(--stop) }
+
+.btnSm {
+  font: inherit; font-size: 11.5px; font-weight: 600; padding: 4px 10px;
+  background: var(--field); border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+  transition: .12s;
+}
+.btnSm:hover { border-color: var(--blue2); color: var(--blue2) }
+.btnSmOn { background: #fbe7e1; border-color: #b23512; color: #b23512 }
+
+.saveBtn {
+  margin-top: 18px; width: 100%; padding: 13px; font: inherit; font-size: 14px; font-weight: 700;
+  background: var(--blue); color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: .15s;
+  letter-spacing: .01em;
+}
+.saveBtn:hover:not(:disabled) { background: var(--blue2) }
+.saveBtn:disabled { opacity: .45; cursor: not-allowed }
+
+.checkRow {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  color: var(--ink); cursor: pointer; margin-top: 10px;
+}
+.checkRow input[type=checkbox] { width: auto; margin: 0 }
+
+.formError { color: var(--stop); font-size: 13px; margin: 8px 0 0; font-weight: 600 }
+
+.actsHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 16px 0 8px; font-size: 13px; font-weight: 700; color: var(--ink);
+}
+.actRow { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap }
+.actRow select, .actRow input { flex: 1; min-width: 110px }
+.actRow .rmBtn { flex: 0 0 auto; margin-top: 6px }
+@media (max-width: 480px) {
+  .actRow select, .actRow input { flex: 1 1 calc(50% - 6px) }
+}
+
+.newActInline { display: flex; gap: 6px; flex: 1; min-width: 0; align-items: center }
+.newActInline input { flex: 1; min-width: 0 }
+
+/* ── People / contacts ──────────────────────────────────────── */
+.peopleList { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px }
+.personCard {
+  border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 10px;
+  background: var(--field); position: relative;
+}
+.personCardTop { display: flex; align-items: center; gap: 8px; margin-bottom: 10px }
+.personCardTop .rmBtn { margin-left: auto; flex: 0 0 auto }
+.personFieldsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px }
+.personFieldsGrid .full { grid-column: 1 / -1 }
+@media (max-width: 540px) { .personFieldsGrid { grid-template-columns: 1fr } }
+
+/* ── Tags ───────────────────────────────────────────────────── */
+.tagList {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  min-height: 34px; align-items: flex-start; padding: 6px 0;
+}
+.tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #e8f0fb; border: 1px solid #c5d6f0; border-radius: 20px;
+  padding: 3px 10px 3px 12px; font-size: 12.5px; color: var(--blue);
+}
+.tag button {
+  width: auto; background: none; border: none; color: var(--blue2);
+  font-size: 15px; line-height: 1; padding: 0; cursor: pointer; border-radius: 0;
+  opacity: .6;
+}
+.tag button:hover { opacity: 1; color: var(--stop) }
+.tagInputRow { display: flex; gap: 8px; margin-top: 6px }
+.tagInputRow input { flex: 1 }
+.tagInputRow .addBtn { flex: 0 0 auto }

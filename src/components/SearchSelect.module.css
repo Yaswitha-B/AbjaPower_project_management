@@ -1,0 +1,46 @@
+.root { position: relative; width: 100% }
+.disabled { opacity: .55; pointer-events: none }
+
+.trigger {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--field); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer;
+  text-align: left; color: var(--ink); transition: border-color .12s;
+}
+.trigger:hover, .trigger:focus { border-color: var(--blue); background: #fff; outline: none }
+.placeholder { color: var(--steel) }
+.value { color: var(--ink); font-weight: 500 }
+.caret { font-size: 11px; color: var(--steel); flex-shrink: 0; margin-left: 6px }
+
+.panel {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(22,32,46,.16);
+  z-index: 200; overflow: hidden;
+}
+.search {
+  width: 100%; border: none; border-bottom: 1px solid var(--line);
+  padding: 9px 12px; font: inherit; font-size: 14px;
+  outline: none; background: #fff;
+}
+.list { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column }
+.addBtn {
+  width: 100%; text-align: left;
+  padding: 9px 12px; border: none; border-bottom: 1px solid var(--line);
+  background: #fef6f1; color: var(--orange);
+  font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background .12s;
+}
+.addBtn:hover:not(:disabled) { background: #fde8d8 }
+.addBtn:disabled { opacity: .45; cursor: default }
+.opt {
+  width: 100%; text-align: left;
+  padding: 9px 12px; border: none; background: transparent;
+  font: inherit; font-size: 14px; color: var(--ink);
+  cursor: pointer; transition: background .1s;
+}
+.opt:hover { background: #f0f4f8 }
+.optOn { background: #e6eef8; color: var(--blue); font-weight: 600 }
+.optOn:hover { background: #dbe6f5 }
+.empty { padding: 12px; font-size: 13px; color: var(--steel); text-align: center }

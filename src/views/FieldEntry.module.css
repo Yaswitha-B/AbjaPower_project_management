@@ -1,0 +1,72 @@
+.stepper {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--line);
+}
+.stepLabel { font-size: 13.5px; font-weight: 600; color: var(--ink) }
+.stepCtrl { display: flex; align-items: center }
+.stepCtrl button {
+  width: 36px; height: 36px; font-size: 18px; font-weight: 600;
+  background: var(--field); border: 1px solid var(--line); color: var(--ink);
+  cursor: pointer; border-radius: 6px; transition: .12s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.stepCtrl button:hover { background: var(--line) }
+.stepCtrl input {
+  width: 56px; text-align: center; border-radius: 0;
+  margin: 0 -1px; position: relative; z-index: 1; font-weight: 700;
+}
+
+.rolesSection {
+  margin: 12px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  background: var(--field);
+}
+.rolesSection summary {
+  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--steel);
+  user-select: none;
+}
+.rolesSection summary:hover { color: var(--ink) }
+.rolesGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 12px }
+@media (max-width: 460px) { .rolesGrid { grid-template-columns: 1fr } }
+
+.waPreview {
+  background: #f0f7ed; border: 1px solid #c5dbb9;
+  border-radius: 8px; margin-top: 20px; overflow: hidden;
+}
+.waHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; background: #d9edd3; font-size: 12px; font-weight: 700; color: #2d5a27;
+}
+.waHeader button {
+  font: inherit; font-size: 12px; background: #2d5a27; color: #fff;
+  border: none; border-radius: 4px; padding: 4px 11px; cursor: pointer; font-weight: 600;
+}
+.waHeader button:hover { background: #1e3d1a }
+.waPreview pre {
+  margin: 0; padding: 12px 14px; font-family: var(--mono); font-size: 12px;
+  white-space: pre-wrap; word-break: break-word; color: #1a3318; line-height: 1.6;
+}
+
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+  background: var(--go); color: #fff; font-weight: 700; font-size: 13.5px;
+  padding: 12px 24px; border-radius: 24px; box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  pointer-events: none; animation: fade .25s ease; z-index: 999;
+  white-space: nowrap;
+}
+
+.modeTabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px }
+
+.issueContext {
+  display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--steel);
+  margin-bottom: 14px; padding: 9px 12px; background: var(--field); border-radius: 6px;
+  border-left: 3px solid var(--blue2);
+}
+.openIssuesHint {
+  background: #fff8f0; border-radius: 6px; padding: 10px 14px;
+  margin-bottom: 16px; border-left: 3px solid var(--orange);
+}
+.hintIssueRow {
+  display: flex; align-items: baseline; padding: 4px 0; border-bottom: 1px solid var(--line);
+  gap: 8px;
+}
+.hintIssueRow:last-child { border-bottom: none }

@@ -1,0 +1,41 @@
+.sig { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; display: inline-block }
+.dGo   { background: var(--go) }
+.dStop { background: var(--stop) }
+
+.rowOpen td { border-left: 3px solid var(--stop) }
+.rowResolved td { border-left: 3px solid var(--go); opacity: .7 }
+
+.legend {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  font-size: 11px; color: var(--steel); margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.legend span { display: inline-flex; align-items: center; gap: 5px }
+
+.hist {
+  font-size: 8.5px; background: #e8f0fb; color: var(--blue);
+  padding: 1px 5px; border-radius: 3px; margin-left: 5px;
+  font-family: var(--mono); letter-spacing: .04em; text-transform: uppercase;
+}
+
+.ageBadge { font-family: var(--mono); font-size: 11px; color: var(--steel) }
+
+.emptyState {
+  padding: 32px 16px; text-align: center;
+  color: var(--steel); font-size: 13px;
+}
+.emptyState strong { display: block; font-size: 15px; color: var(--go); margin-bottom: 4px }
+
+.tableControls {
+  display: flex; align-items: center; justify-content: flex-end;
+  margin-bottom: 8px; gap: 10px;
+}
+.toggleBtn {
+  font: inherit; font-size: 12px; background: var(--field);
+  border: 1px solid var(--line); border-radius: 5px; padding: 4px 10px;
+  cursor: pointer; color: var(--steel); transition: .12s;
+}
+.toggleBtn:hover { background: var(--line); color: var(--ink) }
+.toggleBtnOn { background: var(--blue); color: #fff; border-color: var(--blue) }
+.toggleBtnOn:hover { background: var(--blue2); color: #fff }

@@ -1,0 +1,56 @@
+/* ── Top bar ────────────────────────────────────────────────── */
+.top {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--ink); color: #fff;
+  border-bottom: 3px solid var(--orange);
+}
+.topInner {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; gap: 16px;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; font-weight: 800; font-size: 15px; white-space: nowrap }
+.brand b { color: var(--orange) }
+.brand span {
+  font-weight: 500; color: #9fb0c2; font-size: 10px;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+@media (max-width: 480px) { .brand span { display: none } }
+
+.logoutBtn {
+  background: none; border: 1px solid rgba(255,255,255,.2); color: #9fb0c2;
+  border-radius: 6px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer;
+  white-space: nowrap; transition: .12s;
+}
+.logoutBtn:hover { border-color: rgba(255,255,255,.5); color: #fff }
+
+/* ── Nav ────────────────────────────────────────────────────── */
+.nav {
+  position: sticky; top: 56px; z-index: 20;
+  background: rgba(231,235,239,.97); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.navInner {
+  display: flex; gap: 4px; overflow-x: auto; padding: 8px 20px;
+  scrollbar-width: none; /* Firefox */
+}
+.navInner::-webkit-scrollbar { display: none }
+
+.spacer { flex: 1; min-width: 12px }
+
+/* ── Nav section divider ─────────────────────────────────────── */
+.navDivider {
+  width: 1px; background: var(--line);
+  margin: 4px 4px; flex-shrink: 0; align-self: stretch;
+}
+
+/* ── Issue badge on nav pill ─────────────────────────────────── */
+.navPillWrap { position: relative; display: inline-flex }
+.issueBadge {
+  position: absolute; top: -4px; right: -6px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  background: var(--stop); color: #fff;
+  border-radius: 8px; font-size: 9.5px; font-weight: 700;
+  font-family: var(--mono); display: flex; align-items: center; justify-content: center;
+  pointer-events: none; letter-spacing: 0; line-height: 1;
+  box-shadow: 0 0 0 2px var(--paper);
+}
