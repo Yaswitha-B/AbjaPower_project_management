@@ -573,7 +573,7 @@ export default function CuratorsPanel() {
                       onClick={() => setVerFilter(key)}
                     >
                       {key === 'unverified'
-                        ? `Pending (${tab === 'mis' ? unverMisCount : unverIssCount})`
+                        ? `To Verify (${tab === 'mis' ? unverMisCount : unverIssCount})`
                         : key === 'all' ? 'All' : 'Verified'}
                     </button>
                   ))}
