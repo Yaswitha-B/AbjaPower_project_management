@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchPortfolio, fetchProject, saveRecord } from '../api/client.js';
-import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES } from '../lib/constants.js';
+import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES, STAGE_COLORS } from '../lib/constants.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
@@ -26,9 +26,9 @@ function buildMisMessage({ projectName, date, pkg, reporterName, manpowerTotal, 
   ].filter(l => l != null).join('\n');
 }
 
-function buildBlockerMessage({ projectName, date, mode, description, ownerType, ownerName, neededBy, issueId, note }) {
+function buildBlockerMessage({ projectName, date, mode, stage, description, ownerType, ownerName, neededBy, issueId, note }) {
   const d = date ? new Date(date + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-  const prefix = mode === 'new' ? '[NEW]' : mode === 'close' ? '[CLOSED]' : '[UPDATE]';
+  const prefix = mode === 'new' ? '[NEW]' : stage === 'resolved' ? '[RESOLVED]' : '[UPDATE]';
   const typeLabel = { int: 'Internal', ext: 'External', com: 'Compliance' }[ownerType] ?? ownerType;
   return [
     '*ABJA Power — Blocker Report*',
@@ -230,7 +230,7 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
 const OWNER_TYPE_BADGE = { int: g.badgeInt, ext: g.badgeExt, com: g.badgeCom };
 const OWNER_TYPE_LABEL = Object.fromEntries(ISSUE_OWNER_TYPES.map(o => [o.value, o.label]));
 
-function BlockerForm({ projectId, projectName, openIssues, date, reporterName, onSaved }) {
+function BlockerForm({ projectId, projectName, openIssues, contacts, date, reporterName, onSaved }) {
   const [mode, setMode]                 = useState('new');
   const [selectedId, setSelectedId]     = useState('');
   const [description, setDescription]   = useState('');
@@ -249,7 +249,7 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
   const displayDesc = mode === 'new' ? description : selected?.description ?? '';
 
   const message = buildBlockerMessage({
-    projectName, date, mode,
+    projectName, date, mode, stage,
     description: displayDesc,
     ownerType: mode === 'new' ? ownerType : selected?.owner_type,
     ownerName: mode === 'new' ? ownerName : selected?.owner,
@@ -285,10 +285,10 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
         await saveRecord({
           type: 'issue_update',
           id: selectedId,
-          stage: mode === 'close' ? 'resolved' : stage,
-          resolved_date: mode === 'close' ? date : null,
-          recur: mode === 'update' ? recur : undefined,
-          waiting_on: mode === 'update' ? (waitingOn || null) : undefined,
+          stage,
+          resolved_date: stage === 'resolved' ? date : null,
+          recur,
+          waiting_on: waitingOn || null,
           note: note || null,
           raw_text: message,
           photo_in_group: photoInGroup,
@@ -312,7 +312,7 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
       <Eyebrow>Blocker / Issue</Eyebrow>
 
       <div className={s.modeTabs}>
-        {[['new', 'New Issue'], ['update', 'Update Issue'], ['close', 'Mark Resolved']].map(([m, label]) => (
+        {[['new', 'New Issue'], ['update', 'Existing Issue']].map(([m, label]) => (
           <button key={m} type="button" className={cx(g.pill, mode === m && g.on)} onClick={() => changeMode(m)}>
             {label}
           </button>
@@ -321,18 +321,6 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
 
       {mode === 'new' ? (
         <>
-          {openIssues.length > 0 && (
-            <div className={s.openIssuesHint}>
-              <div className={g.caption} style={{ marginBottom: 6 }}>Open issues — check before raising new</div>
-              {openIssues.map(i => (
-                <div key={i.id} className={s.hintIssueRow}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--blue)' }}>{i.id}</span>
-                  <span style={{ fontSize: 12, marginLeft: 8 }}>{String(i.description ?? '').slice(0, 60)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--steel)', marginLeft: 6 }}>{i.age_days}d</span>
-                </div>
-              ))}
-            </div>
-          )}
           <div className={g.fieldRow}>
             <label>What is the blocker?</label>
             <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the blocker…" />
@@ -348,7 +336,14 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
             </div>
             <div>
               <label>Owner name / team</label>
-              <input value={ownerName} onChange={e => setOwnerName(e.target.value)} placeholder="Name or team…" />
+              <SearchSelect
+                items={(contacts ?? [])
+                  .map(c => ({ label: c.contact_person || c.entity, tag: c.category || undefined }))
+                  .filter(c => c.label)}
+                value={ownerName}
+                onChange={setOwnerName}
+                placeholder="Select owner…"
+              />
             </div>
           </div>
           <div className={g.fieldRow}>
@@ -363,7 +358,7 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
       ) : (
         <>
           <div className={g.fieldRow}>
-            <label>{mode === 'close' ? 'Issue being resolved' : 'Select issue'} *</label>
+            <label>Select issue *</label>
             <SearchSelect
               items={openIssues.map(i => `${i.id} — ${String(i.description ?? '').slice(0, 60)}`)}
               value={selectedId ? `${selectedId} — ${String(openIssues.find(i => i.id === selectedId)?.description ?? '').slice(0, 60)}` : ''}
@@ -385,24 +380,30 @@ function BlockerForm({ projectId, projectName, openIssues, date, reporterName, o
               <span className={g.hint}> · {selected.age_days}d old</span>
             </div>
           )}
-          {mode === 'update' && (
-            <>
-              <div className={g.fieldRow}>
-                <label>New stage</label>
-                <select value={stage} onChange={e => setStage(e.target.value)}>
-                  {REPORTER_STAGES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              <label className={g.checkRow}>
-                <input type="checkbox" checked={recur} onChange={e => setRecur(e.target.checked)} />
-                This issue has recurred
-              </label>
-              <div className={g.fieldRow} style={{ marginTop: 10 }}>
-                <label>Waiting on <span style={{ color: 'var(--steel)', fontWeight: 400 }}>(optional)</span></label>
-                <input value={waitingOn} onChange={e => setWaitingOn(e.target.value)} placeholder="Who or what is blocking this?" />
-              </div>
-            </>
-          )}
+          <div className={g.fieldRow}>
+            <label>Stage</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {REPORTER_STAGES.map(st => (
+                <button
+                  key={st.value}
+                  type="button"
+                  className={cx(g.pill, stage === st.value && g.on)}
+                  style={stage === st.value && STAGE_COLORS[st.value] ? { background: STAGE_COLORS[st.value], borderColor: STAGE_COLORS[st.value] } : {}}
+                  onClick={() => setStage(st.value)}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className={g.checkRow}>
+            <input type="checkbox" checked={recur} onChange={e => setRecur(e.target.checked)} />
+            This issue has recurred
+          </label>
+          <div className={g.fieldRow} style={{ marginTop: 10 }}>
+            <label>Waiting on <span style={{ color: 'var(--steel)', fontWeight: 400 }}>(optional)</span></label>
+            <input value={waitingOn} onChange={e => setWaitingOn(e.target.value)} placeholder="Who or what is blocking this?" />
+          </div>
         </>
       )}
 
@@ -434,6 +435,7 @@ export default function FieldEntry() {
   const [liveZones, setLiveZones]           = useState([]);
   const [liveActivities, setLiveActivities] = useState([]);
   const [openIssues, setOpenIssues]         = useState([]);
+  const [contacts, setContacts]             = useState([]);
   const [date, setDate]                     = useState(new Date().toISOString().slice(0, 10));
   const [reporterName, setReporter]         = useState('');
   const [tab, setTab]                       = useState('mis');
@@ -450,6 +452,7 @@ export default function FieldEntry() {
       setLiveZones(d.config?.towers ?? []);
       setLiveActivities(d.config?.activity_types ?? []);
       setOpenIssues(d.openIssues ?? []);
+      setContacts(d.contacts ?? []);
     }).catch(() => {});
   }, [projectId]);
 
@@ -537,7 +540,7 @@ export default function FieldEntry() {
               {tab === 'blocker' && (
                 <BlockerForm
                   projectId={projectId} projectName={project?.name}
-                  openIssues={openIssues}
+                  openIssues={openIssues} contacts={contacts}
                   date={date} reporterName={reporterName}
                   onSaved={showToast}
                 />

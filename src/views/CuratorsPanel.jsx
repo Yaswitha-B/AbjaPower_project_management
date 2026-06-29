@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   fetchAllMis, fetchAllIssues,
   fetchUnverifiedMis, fetchUnverifiedIssues,
-  fetchProject, saveRecord,
+  fetchProject, fetchSightings, saveRecord,
 } from '../api/client.js';
 import { fmtDate } from '../lib/format.js';
 import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, MANPOWER_ROLES } from '../lib/constants.js';
@@ -299,7 +299,7 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
 
 // ── Issue detail (always editable) ────────────────────────────────────────────
 
-function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorName }) {
+function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, curatorName }) {
   const [description, setDesc]  = useState(issue.description ?? '');
   const [owner, setOwner]       = useState(issue.owner ?? '');
   const [ownerType, setOType]   = useState(issue.owner_type ?? 'int');
@@ -312,6 +312,7 @@ function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorNam
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [saved, setSaved]       = useState(false);
+  const [sightings, setSightings] = useState([]);
 
   useEffect(() => {
     setDesc(issue.description ?? '');
@@ -324,6 +325,8 @@ function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorNam
     setRaisD(issue.raised_date?.slice(0, 10) ?? '');
     setRecur(issue.recur ?? false);
     setError(''); setSaved(false);
+    setSightings([]);
+    fetchSightings(issue.id).then(d => setSightings(d.sightings ?? [])).catch(() => {});
   }, [issue.id]);
 
   const save = async () => {
@@ -374,7 +377,15 @@ function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorNam
         {/* Stage — quick tap buttons, most important */}
         <div className={g.fieldRow} style={{ marginBottom: 14 }}>
           <label>Stage</label>
-          <QuickBtns options={ISSUE_STAGES} value={stage} onChange={setStage} colorMap={STAGE_COLORS} />
+          <QuickBtns
+            options={ISSUE_STAGES}
+            value={stage}
+            onChange={v => {
+              setStage(v);
+              if (v === 'resolved' && !resolvedDate) setResD(new Date().toISOString().slice(0, 10));
+            }}
+            colorMap={STAGE_COLORS}
+          />
         </div>
 
         {/* Party type */}
@@ -391,7 +402,14 @@ function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorNam
         <div className={s.fieldGrid}>
           <div className={g.fieldRow}>
             <label>Owner / responsible name</label>
-            <input value={owner} onChange={e => setOwner(e.target.value)} placeholder="Name or team…" />
+            <SearchSelect
+              items={(contacts ?? [])
+                .map(c => ({ label: c.contact_person || c.entity, tag: c.category || undefined }))
+                .filter(c => c.label)}
+              value={owner}
+              onChange={setOwner}
+              placeholder="Select owner…"
+            />
           </div>
           <div className={g.fieldRow}>
             <label>Waiting on</label>
@@ -421,6 +439,37 @@ function IssueDetail({ issue, onVerified, onPrev, onNext, idx, total, curatorNam
 
         {error && <p className={g.formError} style={{ marginTop: 10 }}>{error}</p>}
         {saved  && <p style={{ color: 'var(--go)', fontSize: 13, marginTop: 10, fontWeight: 600 }}>✓ Saved</p>}
+
+        {sightings.length > 0 && (
+          <div className={s.timeline}>
+            <div className={s.timelineHead}>Activity log</div>
+            {sightings.map((sg, i) => {
+              const isFirst = i === 0;
+              const isLast  = sg.implied_status === 'Actioned';
+              const label   = isFirst ? 'Created' : isLast ? 'Resolved' : 'Updated';
+              const dotCls  = isFirst ? s.dotCreated : isLast ? s.dotResolved : s.dotUpdated;
+              return (
+                <div key={sg.id ?? i} className={s.timelineRow}>
+                  <div className={s.timelineLine}>
+                    <span className={cx(s.dot, dotCls)} />
+                    {i < sightings.length - 1 && <span className={s.connector} />}
+                  </div>
+                  <div className={s.timelineContent}>
+                    <div className={s.timelineTop}>
+                      <span className={cx(s.timelineLabel, dotCls)}>{label}</span>
+                      <span className={s.timelineDate}>{fmtDate(sg.date)}</span>
+                      {sg.reported_by && <span className={s.timelineBy}>{sg.reported_by}</span>}
+                      {sg.photo_in_group && <span className={s.timelinePhoto}>📷</span>}
+                    </div>
+                    {sg.raw_text && !['Raised', 'Updated', 'Resolved'].includes(sg.raw_text) && (
+                      <div className={s.timelineNote}>{sg.raw_text}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className={s.actionBar}>
@@ -464,7 +513,8 @@ export default function CuratorsPanel() {
   const [issFull, setIssFull]     = useState(null);
   const [selected, setSelected]   = useState(0);
   const [curatorName, setCurator] = useState(() => sessionStorage.getItem(CURATOR_KEY) ?? '');
-  const [projectConfigs, setConfigs] = useState({});
+  const [projectConfigs, setConfigs]   = useState({});
+  const [projectContacts, setPContacts] = useState({});
 
   const reload = useCallback(async () => {
     const [uMis, uIss, allMis, allIss] = await Promise.all([
@@ -482,13 +532,16 @@ export default function CuratorsPanel() {
   useEffect(() => { reload(); }, [reload]);
 
   useEffect(() => {
-    const allRows = [...(misQueue ?? []), ...(misFull ?? [])];
+    const allRows = [...(misQueue ?? []), ...(misFull ?? []), ...(issQueue ?? []), ...(issFull ?? [])];
     if (!allRows.length) return;
-    const ids = [...new Set(allRows.map(r => r.project_id))];
+    const ids = [...new Set(allRows.map(r => r.project_id).filter(Boolean))];
     Promise.all(ids.map(id =>
-      fetchProject(id).then(d => [id, d.config ?? null]).catch(() => [id, null])
-    )).then(pairs => setConfigs(Object.fromEntries(pairs)));
-  }, [misQueue, misFull]);
+      fetchProject(id).then(d => [id, d]).catch(() => [id, null])
+    )).then(pairs => {
+      setConfigs(Object.fromEntries(pairs.map(([id, d]) => [id, d?.config ?? null])));
+      setPContacts(Object.fromEntries(pairs.map(([id, d]) => [id, d?.contacts ?? []])));
+    });
+  }, [misQueue, misFull, issQueue, issFull]);
 
   // Reset list position whenever any filter changes
   useEffect(() => { setSelected(0); }, [search, projectFilter, stageFilter, verFilter, dateFrom, dateTo]);
@@ -700,6 +753,7 @@ export default function CuratorsPanel() {
               <IssueDetail
                 key={item.id}
                 issue={item}
+                contacts={projectContacts[item.project_id] ?? []}
                 curatorName={curatorName}
                 idx={selected} total={queue.length}
                 onVerified={onVerified}

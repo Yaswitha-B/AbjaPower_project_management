@@ -12,15 +12,12 @@ export const HIST_SOURCE      = 'steward'; // MIS source tag for historical seed
 // AUTHORITATIVE list — must match what is stored in issues.stage column.
 // Any UI showing stages (buttons, selects, badges) MUST derive from this.
 export const ISSUE_STAGES = [
-  { value: 'raised',             label: 'Raised' },
-  { value: 'with_abja',          label: 'With ABJA' },
-  { value: 'escalated_supplier', label: 'Escalated — Supplier' },
-  { value: 'awaiting_client',    label: 'Awaiting Client' },
-  { value: 'resolved',           label: 'Resolved' },
+  { value: 'raised',   label: 'Raised' },
+  { value: 'updated',  label: 'Updated' },
+  { value: 'resolved', label: 'Resolved' },
 ];
 
-// Subset shown to field reporters — they close via "close issue" mode, not by setting resolved.
-export const REPORTER_STAGES = ISSUE_STAGES.slice(0, 4);
+export const REPORTER_STAGES = ISSUE_STAGES;
 
 // ── Issue owner_type enum ────────────────────────────────────────────────────
 // AUTHORITATIVE list — must match what is stored in issues.owner_type column.
@@ -36,9 +33,7 @@ export const MANPOWER_ROLES = ['Engineer', 'Supervisor', 'Technician', 'Fitter',
 
 // Colour per stage value — used by CuratorsPanel quick-buttons and any badge.
 export const STAGE_COLORS = {
-  raised:             'var(--stop)',
-  with_abja:          'var(--blue2)',
-  escalated_supplier: 'var(--orange)',
-  awaiting_client:    'var(--warn)',
-  resolved:           'var(--go)',
+  raised:   'var(--stop)',
+  updated:  'var(--blue2)',
+  resolved: 'var(--go)',
 };

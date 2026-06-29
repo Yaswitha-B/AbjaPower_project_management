@@ -2,6 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import s from './SearchSelect.module.css';
 import { cx } from '../lib/cx.js';
 
+// items can be plain strings or { label, tag } objects
+function normalise(item) {
+  return typeof item === 'string' ? { label: item, tag: null } : item;
+}
+
 export default function SearchSelect({
   items = [],
   value,
@@ -15,6 +20,8 @@ export default function SearchSelect({
   const [query, setQuery] = useState('');
   const root              = useRef(null);
   const inputRef          = useRef(null);
+
+  const rich = items.map(normalise);
 
   useEffect(() => {
     const handler = (e) => {
@@ -32,11 +39,11 @@ export default function SearchSelect({
   }, [open]);
 
   const filtered = query
-    ? items.filter(i => i.toLowerCase().includes(query.toLowerCase()))
-    : items;
+    ? rich.filter(i => i.label.toLowerCase().includes(query.toLowerCase()))
+    : rich;
 
-  const select = (item) => {
-    onChange(item);
+  const select = (label) => {
+    onChange(label);
     setOpen(false);
     setQuery('');
   };
@@ -50,7 +57,8 @@ export default function SearchSelect({
     setQuery('');
   };
 
-  const showAdd    = onAdd && query.trim() && !items.includes(query.trim());
+  const labels      = rich.map(i => i.label);
+  const showAdd     = onAdd && query.trim() && !labels.includes(query.trim());
   const canAddBlank = onAdd && !query.trim();
 
   return (
@@ -76,7 +84,7 @@ export default function SearchSelect({
             onKeyDown={e => {
               if (e.key === 'Enter') {
                 if (showAdd) handleAdd();
-                else if (filtered.length === 1) select(filtered[0]);
+                else if (filtered.length === 1) select(filtered[0].label);
               }
               if (e.key === 'Escape') { setOpen(false); setQuery(''); }
             }}
@@ -99,14 +107,15 @@ export default function SearchSelect({
             {filtered.length === 0 && (
               <div className={s.empty}>No matches</div>
             )}
-            {filtered.map(item => (
+            {filtered.map(({ label, tag }) => (
               <button
-                key={item}
+                key={label}
                 type="button"
-                className={cx(s.opt, item === value && s.optOn)}
-                onClick={() => select(item)}
+                className={cx(s.opt, label === value && s.optOn)}
+                onClick={() => select(label)}
               >
-                {item}
+                <span className={s.optLabel}>{label}</span>
+                {tag && <span className={s.optTag}>{tag}</span>}
               </button>
             ))}
           </div>

@@ -244,6 +244,48 @@
 .btnNav:hover { background: var(--field); color: var(--ink) }
 .btnNav:disabled { opacity: .35; cursor: default }
 
+/* ── Issue timeline ──────────────────────────────────────────── */
+.timeline {
+  margin-top: 24px; border-top: 1px solid var(--line); padding-top: 16px;
+}
+.timelineHead {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--steel); margin-bottom: 12px;
+}
+.timelineRow {
+  display: flex; gap: 12px; align-items: flex-start; min-height: 32px;
+}
+.timelineLine {
+  display: flex; flex-direction: column; align-items: center;
+  width: 16px; flex-shrink: 0; padding-top: 3px;
+}
+.dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid currentColor;
+}
+.dotCreated  { color: var(--blue2);  background: #e8f0ff }
+.dotUpdated  { color: var(--steel);  background: var(--field) }
+.dotResolved { color: var(--go);     background: #e8f5e9 }
+.connector {
+  width: 2px; flex: 1; min-height: 16px; margin-top: 3px;
+  background: var(--line); border-radius: 1px;
+}
+.timelineContent { flex: 1; min-width: 0; padding-bottom: 14px }
+.timelineTop {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.timelineLabel {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+}
+.timelineDate { font-size: 11.5px; color: var(--steel); font-family: var(--mono) }
+.timelineBy   { font-size: 11px; color: var(--steel) }
+.timelinePhoto { font-size: 11px }
+.timelineNote {
+  margin-top: 4px; font-size: 12.5px; color: var(--ink);
+  background: var(--field); border-radius: 6px; padding: 6px 10px;
+  border-left: 2px solid var(--line); white-space: pre-wrap;
+}
+
 @media (max-width: 680px) {
   .shell { flex-direction: column; height: auto; min-height: 600px }
   .sidebar { width: 100%; max-height: 380px; border-right: none; border-bottom: 1px solid var(--line) }

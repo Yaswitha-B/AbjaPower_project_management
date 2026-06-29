@@ -52,17 +52,16 @@ export default async (req) => {
         const { id, ...patch } = data;
         const result = await updateIssue(id, patch);
         await markIssueUnverified(id);
-        if (patch.raw_text || patch.note) {
-          await insertSighting({
-            issue_id:       id,
-            source:         data.source ?? 'form',
-            date:           data.date ?? new Date().toISOString().slice(0, 10),
-            raw_text:       patch.raw_text ?? patch.note,
-            implied_status: patch.stage === 'resolved' ? 'Actioned' : 'Pending',
-            photo_in_group: patch.photo_in_group,
-            reported_by:    data.reported_by,
-          });
-        }
+        const stageLabel = patch.stage === 'resolved' ? 'Resolved' : patch.stage === 'updated' ? 'Updated' : 'Raised';
+        await insertSighting({
+          issue_id:       id,
+          source:         data.source ?? 'form',
+          date:           data.date ?? new Date().toISOString().slice(0, 10),
+          raw_text:       patch.raw_text ?? patch.note ?? stageLabel,
+          implied_status: patch.stage === 'resolved' ? 'Actioned' : 'Pending',
+          photo_in_group: patch.photo_in_group ?? false,
+          reported_by:    data.reported_by,
+        });
         return Response.json({ ok: true, issue: result });
       }
 

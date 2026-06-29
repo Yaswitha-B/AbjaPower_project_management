@@ -24,3 +24,4 @@ export const fetchAllMis           = ()          => request('/read?curator=mis')
 export const fetchAllIssues        = ()          => request('/read?curator=issues');
 export const fetchUnverifiedMis    = (projectId) => request(`/read?curator=mis_unverified${projectId ? `&project=${projectId}` : ''}`);
 export const fetchUnverifiedIssues = (projectId) => request(`/read?curator=issues_unverified${projectId ? `&project=${projectId}` : ''}`);
+export const fetchSightings        = (issueId)   => request(`/read?sightings=${issueId}`);

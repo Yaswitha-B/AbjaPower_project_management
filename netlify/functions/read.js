@@ -3,15 +3,21 @@ import {
   getMonthlyTrend, getActivityBreakdown, getTowerBreakdown,
   getIssues, getOpenIssues, getCertEvents, getLatestSignals,
   getContacts, getAllMisRows, getAllIssues,
-  getUnverifiedMis, getUnverifiedIssues,
+  getUnverifiedMis, getUnverifiedIssues, getSightings,
 } from '../../lib/db.js';
 
 export default async (req) => {
   const url      = new URL(req.url);
   const id       = url.searchParams.get('project');
   const curator  = url.searchParams.get('curator');
+  const issueId  = url.searchParams.get('sightings');
 
   try {
+    if (issueId) {
+      const sightings = await getSightings(issueId);
+      return Response.json({ sightings });
+    }
+
     if (curator === 'mis') {
       const rows = await getAllMisRows();
       return Response.json({ rows });
