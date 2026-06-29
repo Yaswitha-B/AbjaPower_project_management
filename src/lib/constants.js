@@ -30,6 +30,10 @@ export const ISSUE_OWNER_TYPES = [
   { value: 'com', label: 'Compliance' },
 ];
 
+// ── Manpower role list ───────────────────────────────────────────────────────
+// Shared between FieldEntry steppers and CuratorsPanel add-role dropdown.
+export const MANPOWER_ROLES = ['Engineer', 'Supervisor', 'Technician', 'Fitter', 'Helper', 'Others'];
+
 // Colour per stage value — used by CuratorsPanel quick-buttons and any badge.
 export const STAGE_COLORS = {
   raised:             'var(--stop)',

@@ -5,7 +5,7 @@ import {
   fetchProject, saveRecord,
 } from '../api/client.js';
 import { fmtDate } from '../lib/format.js';
-import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS } from '../lib/constants.js';
+import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, MANPOWER_ROLES } from '../lib/constants.js';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
 import s from './CuratorsPanel.module.css';
@@ -93,6 +93,11 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
   const [pkg, setPkg]         = useState(row.package ?? '');
   const [manpower, setMp]     = useState(row.manpower_total ?? 0);
   const [reporter, setRep]    = useState(row.reported_by ?? '');
+  const [roles, setRoles]     = useState(
+    typeof row.manpower_detail === 'object' && row.manpower_detail
+      ? { ...row.manpower_detail }
+      : {}
+  );
   const [activities, setActs] = useState(
     (Array.isArray(row.activities) ? row.activities : []).map(a => ({
       activity: a.activity ?? '', tower: a.tower ?? '', area: a.area ?? '',
@@ -101,6 +106,11 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
   const [editActs, setEditActs] = useState(false);
   const [zones, setZones]       = useState(projectConfig?.towers ?? []);
   const [acts2, setActTypes]    = useState(projectConfig?.activity_types ?? []);
+
+  useEffect(() => {
+    if (projectConfig?.towers?.length)         setZones(projectConfig.towers);
+    if (projectConfig?.activity_types?.length) setActTypes(projectConfig.activity_types);
+  }, [projectConfig]);
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [saved, setSaved]       = useState(false);
@@ -110,11 +120,23 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
     setPkg(row.package ?? '');
     setMp(row.manpower_total ?? 0);
     setRep(row.reported_by ?? '');
+    setRoles(
+      typeof row.manpower_detail === 'object' && row.manpower_detail
+        ? { ...row.manpower_detail }
+        : {}
+    );
     setActs((Array.isArray(row.activities) ? row.activities : []).map(a => ({
       activity: a.activity ?? '', tower: a.tower ?? '', area: a.area ?? '',
     })));
     setEditActs(false); setError(''); setSaved(false);
   }, [row.id]);
+
+  const setRole    = (role, v) => setRoles(r => ({ ...r, [role]: Math.max(0, v) }));
+  const removeRole = (role) => setRoles(r => { const n = { ...r }; delete n[role]; return n; });
+  const addRole    = (name) => {
+    if (!name || roles[name] !== undefined) return;
+    setRoles(r => ({ ...r, [name]: 0 }));
+  };
 
   const addRow = () => setActs(a => [...a, { activity: '', tower: '', area: '' }]);
   const updRow = (i, v) => setActs(a => a.map((r, j) => j === i ? v : r));
@@ -127,6 +149,7 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
         type: 'mis_update', id: row.id,
         date: date || undefined, package: pkg || undefined,
         manpower_total: manpower,
+        manpower_detail: roles,
         activities: activities.filter(a => a.activity),
         reported_by: reporter || undefined,
       });
@@ -175,18 +198,41 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
           </div>
         </div>
 
-        {/* Manpower — big total + role breakdown */}
+        {/* Manpower — big total + editable role breakdown */}
         <div className={s.mpBlock}>
-          <div className={s.mpRow}>
-            <div>
-              <div className={s.mpLabel}>Manpower on site</div>
-              <input
-                type="number" min="0" value={manpower}
-                onChange={e => setMp(+e.target.value || 0)}
-                className={s.mpInput}
-              />
+          <div className={s.mpLabel}>Manpower on site</div>
+          <input
+            type="number" min="0" value={manpower}
+            onChange={e => setMp(+e.target.value || 0)}
+            className={s.mpInput}
+          />
+          {Object.keys(roles).length > 0 && (
+            <div className={s.rolesGrid}>
+              {Object.entries(roles).map(([role, count]) => (
+                <div key={role} className={s.roleStepper}>
+                  <span className={s.roleLabel}>{role}</span>
+                  <div className={s.stepCtrl}>
+                    <button type="button" onClick={() => setRole(role, count - 1)}>−</button>
+                    <input
+                      type="number" min="0" value={count}
+                      onChange={e => setRole(role, parseInt(e.target.value) || 0)}
+                    />
+                    <button type="button" onClick={() => setRole(role, count + 1)}>+</button>
+                  </div>
+                  <button type="button" className={s.roleRemoveBtn} onClick={() => removeRole(role)} title="Remove">×</button>
+                </div>
+              ))}
             </div>
-            <ManpowerDetail detail={detail} />
+          )}
+          <div className={s.addRoleRow}>
+            <SearchSelect
+              items={MANPOWER_ROLES.filter(r => roles[r] === undefined)}
+              value=""
+              placeholder="Add role…"
+              addLabel="role"
+              onChange={addRole}
+              onAdd={addRole}
+            />
           </div>
         </div>
 
@@ -210,10 +256,18 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
                 <div key={i} className={s.actsEditorRow}>
                   <SearchSelect items={acts2} value={r.activity} placeholder="Activity *" addLabel="activity"
                     onChange={v => updRow(i, { ...r, activity: v })}
-                    onAdd={v => { if (!acts2.includes(v)) setActTypes(a => [...a, v]); }} />
+                    onAdd={v => {
+                      if (acts2.includes(v)) return;
+                      setActTypes(a => [...a, v]);
+                      saveRecord({ type: 'project_add_activity', project_id: row.project_id, activity: v }).catch(() => {});
+                    }} />
                   <SearchSelect items={zones} value={r.tower} placeholder="Zone (opt)" addLabel="zone"
                     onChange={v => updRow(i, { ...r, tower: v })}
-                    onAdd={v => { if (!zones.includes(v)) setZones(z => [...z, v]); }} />
+                    onAdd={v => {
+                      if (zones.includes(v)) return;
+                      setZones(z => [...z, v]);
+                      saveRecord({ type: 'project_add_zone', project_id: row.project_id, zone: v }).catch(() => {});
+                    }} />
                   <input aria-label="Area" placeholder="Area (opt)" value={r.area}
                     onChange={e => updRow(i, { ...r, area: e.target.value })} />
                   <button type="button" className={g.rmBtn} onClick={() => rmRow(i)} title="Remove">×</button>
@@ -428,12 +482,13 @@ export default function CuratorsPanel() {
   useEffect(() => { reload(); }, [reload]);
 
   useEffect(() => {
-    if (!misQueue) return;
-    const ids = [...new Set(misQueue.map(r => r.project_id))];
+    const allRows = [...(misQueue ?? []), ...(misFull ?? [])];
+    if (!allRows.length) return;
+    const ids = [...new Set(allRows.map(r => r.project_id))];
     Promise.all(ids.map(id =>
       fetchProject(id).then(d => [id, d.config ?? null]).catch(() => [id, null])
     )).then(pairs => setConfigs(Object.fromEntries(pairs)));
-  }, [misQueue]);
+  }, [misQueue, misFull]);
 
   // Reset list position whenever any filter changes
   useEffect(() => { setSelected(0); }, [search, projectFilter, stageFilter, verFilter, dateFrom, dateTo]);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchPortfolio, fetchProject, saveRecord } from '../api/client.js';
-import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES } from '../lib/constants.js';
+import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES } from '../lib/constants.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
@@ -118,8 +118,7 @@ function WaPreview({ text }) {
 
 // ── MIS form ───────────────────────────────────────────────────────────────────
 
-// Default roles shown when project has no custom role list
-const DEFAULT_ROLES = ['Engineer', 'Supervisor', 'Technician', 'Fitter', 'Helper'];
+const DEFAULT_ROLES = MANPOWER_ROLES;
 
 function MisForm({ projectId, projectName, config, liveZones, liveActivities, onAddZone, onAddActivity, date, reporterName, onSaved }) {
   const workPackages = config?.work_packages ?? [];
