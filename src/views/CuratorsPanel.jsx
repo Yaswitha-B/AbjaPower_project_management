@@ -5,7 +5,7 @@ import {
   fetchProject, fetchSightings, saveRecord,
 } from '../api/client.js';
 import { fmtDate } from '../lib/format.js';
-import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, MANPOWER_ROLES } from '../lib/constants.js';
+import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, MANPOWER_ROLES, PRIORITY_LEVELS } from '../lib/constants.js';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
 import s from './CuratorsPanel.module.css';
@@ -309,6 +309,7 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
   const [resolvedDate, setResD] = useState(issue.resolved_date?.slice(0, 10) ?? '');
   const [raisedDate, setRaisD]  = useState(issue.raised_date?.slice(0, 10) ?? '');
   const [recur, setRecur]       = useState(issue.recur ?? false);
+  const [priority, setPriority] = useState(issue.priority ?? '');
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState('');
   const [saved, setSaved]       = useState(false);
@@ -324,6 +325,7 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
     setResD(issue.resolved_date?.slice(0, 10) ?? '');
     setRaisD(issue.raised_date?.slice(0, 10) ?? '');
     setRecur(issue.recur ?? false);
+    setPriority(issue.priority ?? '');
     setError(''); setSaved(false);
     setSightings([]);
     fetchSightings(issue.id).then(d => setSightings(d.sightings ?? [])).catch(() => {});
@@ -339,6 +341,7 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
         waiting_on: waitingOn || undefined, note: note || undefined,
         resolved_date: resolvedDate || null,
         raised_date: raisedDate || undefined, recur,
+        priority: priority || null,
       });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (e) { setError(e.message || 'Save failed'); }
@@ -371,7 +374,31 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
               {issue.recur && ' · ↻ Recurring'}
             </div>
           </div>
-          <VerChip row={issue} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {priority && (() => {
+              const p = PRIORITY_LEVELS.find(l => l.value === priority);
+              return p ? <span className={s.priorityBadge} style={{ background: p.color }}>{p.label}</span> : null;
+            })()}
+            <VerChip row={issue} />
+          </div>
+        </div>
+
+        {/* Priority */}
+        <div className={g.fieldRow} style={{ marginBottom: 14 }}>
+          <label>Priority <span style={{ color: 'var(--steel)', fontWeight: 400 }}>(optional)</span></label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {PRIORITY_LEVELS.map(p => (
+              <button
+                key={p.value}
+                type="button"
+                className={cx(s.quickBtn, priority === p.value && s.quickBtnOn)}
+                style={priority === p.value ? { background: p.color, borderColor: p.color } : {}}
+                onClick={() => setPriority(v => v === p.value ? '' : p.value)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Stage — quick tap buttons, most important */}
@@ -444,10 +471,10 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
           <div className={s.timeline}>
             <div className={s.timelineHead}>Activity log</div>
             {sightings.map((sg, i) => {
-              const isFirst = i === 0;
-              const isLast  = sg.implied_status === 'Actioned';
-              const label   = isFirst ? 'Created' : isLast ? 'Resolved' : 'Updated';
-              const dotCls  = isFirst ? s.dotCreated : isLast ? s.dotResolved : s.dotUpdated;
+              const isCreated = i === sightings.length - 1;
+              const isResolved = sg.implied_status === 'Actioned';
+              const label   = isCreated ? 'Created' : isResolved ? 'Resolved' : 'Updated';
+              const dotCls  = isCreated ? s.dotCreated : isResolved ? s.dotResolved : s.dotUpdated;
               return (
                 <div key={sg.id ?? i} className={s.timelineRow}>
                   <div className={s.timelineLine}>

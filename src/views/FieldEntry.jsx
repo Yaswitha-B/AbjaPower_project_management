@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchPortfolio, fetchProject, saveRecord } from '../api/client.js';
-import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES, STAGE_COLORS } from '../lib/constants.js';
+import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
@@ -218,7 +218,7 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
 
       {error && <p className={g.formError}>⚠ {error}</p>}
       <button className={g.saveBtn} onClick={save} disabled={saving}>
-        {saving ? 'Saving…' : 'Save to database'}
+        {saving ? 'Saving…' : 'Save'}
       </button>
     </div>
   );
@@ -240,6 +240,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
   const [waitingOn, setWaitingOn]       = useState('');
   const [note, setNote]                 = useState('');
   const [stage, setStage]               = useState('raised');
+  const [priority, setPriority]         = useState('');
   const [recur, setRecur]               = useState(false);
   const [photoInGroup, setPhotoInGroup] = useState(false);
   const [saving, setSaving]             = useState(false);
@@ -271,6 +272,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
           owner: ownerName || null,
           owner_type: ownerType,
           stage: 'raised',
+          priority: priority || null,
           waiting_on: waitingOn || null,
           needed_by: neededBy || null,
           photo_in_group: photoInGroup,
@@ -279,7 +281,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
           reported_by: reporterName || null,
           source: 'form',
         });
-        setDescription(''); setOwnerName(''); setNeededBy(''); setWaitingOn('');
+        setDescription(''); setOwnerName(''); setNeededBy(''); setWaitingOn(''); setPriority('');
       } else {
         if (!selectedId) { setSaving(false); return setError('Select an issue'); }
         await saveRecord({
@@ -354,6 +356,22 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
             <label>Waiting on <span style={{ color: 'var(--steel)', fontWeight: 400 }}>(optional)</span></label>
             <input value={waitingOn} onChange={e => setWaitingOn(e.target.value)} placeholder="Who or what is blocking this?" />
           </div>
+          <div className={g.fieldRow}>
+            <label>Priority <span style={{ color: 'var(--steel)', fontWeight: 400 }}>(optional)</span></label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {PRIORITY_LEVELS.map(p => (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={cx(g.pill, priority === p.value && g.on)}
+                  style={priority === p.value ? { background: p.color, borderColor: p.color } : {}}
+                  onClick={() => setPriority(v => v === p.value ? '' : p.value)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <>
@@ -420,7 +438,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
 
       {error && <p className={g.formError}>⚠ {error}</p>}
       <button className={g.saveBtn} onClick={save} disabled={saving}>
-        {saving ? 'Saving…' : 'Save to database'}
+        {saving ? 'Saving…' : 'Save'}
       </button>
     </div>
   );

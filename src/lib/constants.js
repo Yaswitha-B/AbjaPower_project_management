@@ -31,6 +31,14 @@ export const ISSUE_OWNER_TYPES = [
 // Shared between FieldEntry steppers and CuratorsPanel add-role dropdown.
 export const MANPOWER_ROLES = ['Engineer', 'Supervisor', 'Technician', 'Fitter', 'Helper', 'Others'];
 
+// ── Issue priority ───────────────────────────────────────────────────────────
+export const PRIORITY_LEVELS = [
+  { value: 'critical', label: 'Critical', color: 'var(--stop)' },
+  { value: 'high',     label: 'High',     color: 'var(--orange)' },
+  { value: 'medium',   label: 'Medium',   color: 'var(--warn)' },
+  { value: 'low',      label: 'Low',      color: 'var(--steel)' },
+];
+
 // Colour per stage value — used by CuratorsPanel quick-buttons and any badge.
 export const STAGE_COLORS = {
   raised:   'var(--stop)',
