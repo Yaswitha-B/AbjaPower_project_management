@@ -27,10 +27,6 @@ export const ISSUE_OWNER_TYPES = [
   { value: 'com', label: 'Compliance' },
 ];
 
-// ── Manpower role list ───────────────────────────────────────────────────────
-// Shared between FieldEntry steppers and CuratorsPanel add-role dropdown.
-export const MANPOWER_ROLES = ['Engineer', 'Supervisor', 'Technician', 'Fitter', 'Helper', 'Others'];
-
 // ── Issue priority ───────────────────────────────────────────────────────────
 export const PRIORITY_LEVELS = [
   { value: 'critical', label: 'Critical', color: 'var(--stop)' },

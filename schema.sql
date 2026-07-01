@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS projects (
   towers         JSONB NOT NULL DEFAULT '[]',
   work_packages  JSONB NOT NULL DEFAULT '[]',
   activity_types JSONB NOT NULL DEFAULT '[]',
+  hr_roles       JSONB NOT NULL DEFAULT '[]',
   status         TEXT NOT NULL DEFAULT 'active',
   start_date     DATE,
   end_date       DATE,
@@ -18,8 +19,8 @@ CREATE TABLE IF NOT EXISTS mis_rows (
   project_id       TEXT NOT NULL REFERENCES projects(id),
   date             DATE NOT NULL,
   package          TEXT,
-  manpower_total   INTEGER NOT NULL DEFAULT 0,
-  manpower_detail  JSONB NOT NULL DEFAULT '{}',
+  hr_total         INTEGER NOT NULL DEFAULT 0,
+  hr_detail        JSONB NOT NULL DEFAULT '{}',
   activities       JSONB NOT NULL DEFAULT '[]',
   reported_by      TEXT,
   source           TEXT NOT NULL DEFAULT 'form',
@@ -144,9 +145,9 @@ SELECT
   p.start_date,
   p.end_date,
   COUNT(DISTINCT m.date)                                     AS reported_days,
-  COALESCE(SUM(m.manpower_total), 0)                         AS total_man_days,
-  COALESCE(ROUND(AVG(m.manpower_total)::NUMERIC, 1), 0)      AS avg_crew,
-  COALESCE(MAX(m.manpower_total), 0)                         AS peak_crew,
+  COALESCE(SUM(m.hr_total), 0)                               AS total_man_days,
+  COALESCE(ROUND(AVG(m.hr_total)::NUMERIC, 1), 0)            AS avg_crew,
+  COALESCE(MAX(m.hr_total), 0)                               AS peak_crew,
   MAX(m.date)                                                AS last_report_date,
 
   COUNT(DISTINCT i.id)                                       AS distinct_blockers,
@@ -165,7 +166,7 @@ CREATE OR REPLACE VIEW monthly_trend AS
 SELECT
   project_id,
   DATE_TRUNC('month', date) AS month,
-  SUM(manpower_total)        AS man_days
+  SUM(hr_total)              AS man_days
 FROM mis_rows
 GROUP BY project_id, DATE_TRUNC('month', date)
 ORDER BY project_id, month;

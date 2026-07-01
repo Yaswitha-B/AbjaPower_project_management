@@ -20,11 +20,6 @@
   margin: 12px 0; border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
   background: var(--field);
 }
-.rolesSection summary {
-  cursor: pointer; font-size: 13px; font-weight: 600; color: var(--steel);
-  user-select: none;
-}
-.rolesSection summary:hover { color: var(--ink) }
 .rolesGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 12px }
 @media (max-width: 460px) { .rolesGrid { grid-template-columns: 1fr } }
 

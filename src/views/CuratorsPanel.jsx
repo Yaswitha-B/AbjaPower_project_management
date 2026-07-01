@@ -5,7 +5,7 @@ import {
   fetchProject, fetchSightings, saveRecord,
 } from '../api/client.js';
 import { fmtDate } from '../lib/format.js';
-import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, MANPOWER_ROLES, PRIORITY_LEVELS } from '../lib/constants.js';
+import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
 import s from './CuratorsPanel.module.css';
@@ -49,14 +49,14 @@ function QuickBtns({ options, value, onChange, colorMap }) {
 
 // ── MIS detail (always editable) ──────────────────────────────────────────────
 
-function ManpowerDetail({ detail }) {
+function HrDetail({ detail }) {
   if (!detail || typeof detail !== 'object') return null;
   const entries = Object.entries(detail).filter(([, v]) => Number(v) > 0);
   if (!entries.length) return null;
   return (
-    <div className={s.mpDetail}>
+    <div className={s.hrDetail}>
       {entries.map(([role, count]) => (
-        <span key={role} className={s.mpChip}>
+        <span key={role} className={s.hrChip}>
           <strong>{count}</strong> {role}
         </span>
       ))}
@@ -91,11 +91,10 @@ function ActivityTable({ activities }) {
 function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total, curatorName }) {
   const [date, setDate]       = useState(row.date?.slice(0, 10) ?? '');
   const [pkg, setPkg]         = useState(row.package ?? '');
-  const [manpower, setMp]     = useState(row.manpower_total ?? 0);
   const [reporter, setRep]    = useState(row.reported_by ?? '');
   const [roles, setRoles]     = useState(
-    typeof row.manpower_detail === 'object' && row.manpower_detail
-      ? { ...row.manpower_detail }
+    typeof row.hr_detail === 'object' && row.hr_detail
+      ? { ...row.hr_detail }
       : {}
   );
   const [activities, setActs] = useState(
@@ -118,11 +117,10 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
   useEffect(() => {
     setDate(row.date?.slice(0, 10) ?? '');
     setPkg(row.package ?? '');
-    setMp(row.manpower_total ?? 0);
     setRep(row.reported_by ?? '');
     setRoles(
-      typeof row.manpower_detail === 'object' && row.manpower_detail
-        ? { ...row.manpower_detail }
+      typeof row.hr_detail === 'object' && row.hr_detail
+        ? { ...row.hr_detail }
         : {}
     );
     setActs((Array.isArray(row.activities) ? row.activities : []).map(a => ({
@@ -133,10 +131,12 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
 
   const setRole    = (role, v) => setRoles(r => ({ ...r, [role]: Math.max(0, v) }));
   const removeRole = (role) => setRoles(r => { const n = { ...r }; delete n[role]; return n; });
+  // One-off addition for this entry only — does not touch the project's master role list.
   const addRole    = (name) => {
     if (!name || roles[name] !== undefined) return;
     setRoles(r => ({ ...r, [name]: 0 }));
   };
+  const hrTotal = Object.values(roles).reduce((a, b) => a + Number(b), 0);
 
   const addRow = () => setActs(a => [...a, { activity: '', tower: '', area: '' }]);
   const updRow = (i, v) => setActs(a => a.map((r, j) => j === i ? v : r));
@@ -148,8 +148,7 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
       await saveRecord({
         type: 'mis_update', id: row.id,
         date: date || undefined, package: pkg || undefined,
-        manpower_total: manpower,
-        manpower_detail: roles,
+        hr_detail: roles,
         activities: activities.filter(a => a.activity),
         reported_by: reporter || undefined,
       });
@@ -169,8 +168,6 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
       onVerified();
     } catch { setSaving(false); }
   };
-
-  const detail = typeof row.manpower_detail === 'object' ? row.manpower_detail : {};
 
   return (
     <>
@@ -198,14 +195,10 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
           </div>
         </div>
 
-        {/* Manpower — big total + editable role breakdown */}
-        <div className={s.mpBlock}>
-          <div className={s.mpLabel}>Manpower on site</div>
-          <input
-            type="number" min="0" value={manpower}
-            onChange={e => setMp(+e.target.value || 0)}
-            className={s.mpInput}
-          />
+        {/* Human Resource — auto-summed total (sum of roles below) + editable role breakdown */}
+        <div className={s.hrBlock}>
+          <div className={s.hrLabel}>Human Resource on site</div>
+          <div className={s.hrTotal}>{hrTotal}</div>
           {Object.keys(roles).length > 0 && (
             <div className={s.rolesGrid}>
               {Object.entries(roles).map(([role, count]) => (
@@ -226,9 +219,9 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
           )}
           <div className={s.addRoleRow}>
             <SearchSelect
-              items={MANPOWER_ROLES.filter(r => roles[r] === undefined)}
+              items={(projectConfig?.hr_roles ?? []).filter(r => roles[r] === undefined)}
               value=""
-              placeholder="Add role…"
+              placeholder="Add role… (one-off for this entry only)"
               addLabel="role"
               onChange={addRole}
               onAdd={addRole}
@@ -745,7 +738,7 @@ export default function CuratorsPanel() {
                       </div>
                       <div className={s.queueItemMeta}>
                         {tab === 'mis'
-                          ? `${it.project_name} · ${it.manpower_total} crew`
+                          ? `${it.project_name} · ${it.hr_total} crew`
                           : it.description?.slice(0, 50)}
                       </div>
                     </div>

@@ -37,7 +37,7 @@ export default function Curation() {
         {tab === 'chat' && (
           <PlaceholderCard
             title="Chat Parse"
-            description="Upload or paste a WhatsApp group export. The tool will split messages by day, detect manpower totals, activity rows, and blocker candidates — then let you edit the parsed card before committing to the database."
+            description="Upload or paste a WhatsApp group export. The tool will split messages by day, detect Human Resource totals, activity rows, and blocker candidates — then let you edit the parsed card before committing to the database."
             note="In development — chat parsing pipeline is being built"
           />
         )}

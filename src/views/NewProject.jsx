@@ -174,6 +174,7 @@ export default function NewProject() {
   const [zones, setZones]           = useState([]);
   const [packages, setPackages]     = useState([]);
   const [activities, setActivities] = useState([]);
+  const [hrRoles, setHrRoles]       = useState([]);
   const [contacts, setContacts]     = useState([]);
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
@@ -191,7 +192,7 @@ export default function NewProject() {
   const resetForm = () => {
     setName(''); setId(''); setIdPrefix(''); setDiscipline('');
     setStatus('active'); setStartDate(''); setEndDate('');
-    setZones([]); setPackages([]); setActivities([]); setContacts([]); setError('');
+    setZones([]); setPackages([]); setActivities([]); setHrRoles([]); setContacts([]); setError('');
   };
 
   const save = async () => {
@@ -212,6 +213,7 @@ export default function NewProject() {
         towers: zones,
         work_packages: packages,
         activity_types: activities,
+        hr_roles: hrRoles,
         status,
         start_date: startDate || null,
         end_date: endDate || null,
@@ -339,6 +341,15 @@ export default function NewProject() {
                 <Eyebrow>Scope</Eyebrow>
                 <TagList label="Zones" hint="site structure" items={zones} onChange={setZones} placeholder="Tower 1, Podium, B1…  then press Enter" />
                 <TagList label="Work packages" hint="groups for MIS reporting" items={packages} onChange={setPackages} placeholder="MEP, HVAC, Fire Fighting…  then press Enter" />
+              </div>
+
+              <div className={g.card} style={{ marginTop: 16 }}>
+                <Eyebrow>Human Resource roles</Eyebrow>
+                <p className={g.hintNote} style={{ marginBottom: 16 }}>
+                  These are the roles field reporters will log a headcount against for this project
+                  (e.g. Engineer, Welder, Project Manager). Different projects can have different roles.
+                </p>
+                <TagList label="Human Resource roles" items={hrRoles} onChange={setHrRoles} placeholder="Engineer, Welder, Project Manager…  then press Enter" />
               </div>
 
               <div className={g.card} style={{ marginTop: 16 }}>

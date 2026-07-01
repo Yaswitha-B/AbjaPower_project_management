@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchPortfolio, fetchProject, saveRecord } from '../api/client.js';
-import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, MANPOWER_ROLES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
+import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
 import Eyebrow from '../components/Eyebrow.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
@@ -9,7 +9,7 @@ import { cx } from '../lib/cx.js';
 
 // ── WhatsApp message builders ──────────────────────────────────────────────────
 
-function buildMisMessage({ projectName, date, pkg, reporterName, manpowerTotal, roles, activities }) {
+function buildMisMessage({ projectName, date, pkg, reporterName, hrTotal, roles, activities }) {
   const d = date ? new Date(date + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
   const roleLine = Object.entries(roles).filter(([, v]) => v > 0).map(([k, v]) => `${k}: ${v}`).join(' | ');
   const actLines = activities.filter(a => a.activity).map(a => `- ${[a.tower, a.area, a.activity].filter(Boolean).join(' / ')}`).join('\n');
@@ -20,7 +20,7 @@ function buildMisMessage({ projectName, date, pkg, reporterName, manpowerTotal, 
     pkg && `Package: ${pkg}`,
     `Reporter: ${reporterName || '—'}`,
     '',
-    `*Manpower: ${manpowerTotal}*`,
+    `*Human Resource: ${hrTotal}*`,
     roleLine || null,
     actLines ? `\n*Activities:*\n${actLines}` : null,
   ].filter(l => l != null).join('\n');
@@ -118,21 +118,24 @@ function WaPreview({ text }) {
 
 // ── MIS form ───────────────────────────────────────────────────────────────────
 
-const DEFAULT_ROLES = MANPOWER_ROLES;
-
 function MisForm({ projectId, projectName, config, liveZones, liveActivities, onAddZone, onAddActivity, date, reporterName, onSaved }) {
   const workPackages = config?.work_packages ?? [];
+  const hrRoleNames   = config?.hr_roles ?? [];
 
-  const [pkg, setPkg]                     = useState('');
-  const [manpowerTotal, setManpowerTotal] = useState(0);
-  const [roles, setRoles]                 = useState(() => Object.fromEntries(DEFAULT_ROLES.map(r => [r, 0])));
-  const [activities, setActivities]       = useState([{ tower: '', area: '', activity: '' }]);
-  const [saving, setSaving]               = useState(false);
-  const [error, setError]                 = useState('');
+  const [pkg, setPkg]               = useState('');
+  const [roles, setRoles]           = useState({});
+  const [activities, setActivities] = useState([{ tower: '', area: '', activity: '' }]);
+  const [saving, setSaving]         = useState(false);
+  const [error, setError]           = useState('');
 
-  const roleTotal      = Object.values(roles).reduce((a, b) => a + b, 0);
-  const effectiveTotal = manpowerTotal || roleTotal;
-  const message        = buildMisMessage({ projectName, date, pkg, reporterName, manpowerTotal: effectiveTotal, roles, activities });
+  // Project config arrives async after project selection — (re)seed the role
+  // steppers from that project's own list once it lands.
+  useEffect(() => {
+    setRoles(Object.fromEntries(hrRoleNames.map(r => [r, 0])));
+  }, [config]);
+
+  const hrTotal  = Object.values(roles).reduce((a, b) => a + b, 0);
+  const message  = buildMisMessage({ projectName, date, pkg, reporterName, hrTotal, roles, activities });
 
   const addRow    = () => setActivities(a => [...a, { tower: '', area: '', activity: '' }]);
   const updateRow = (i, val) => setActivities(a => a.map((r, j) => j === i ? val : r));
@@ -141,7 +144,6 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
 
   const save = async () => {
     if (!date) return setError('Date is required');
-    if (!effectiveTotal) return setError('Add manpower count');
     setError(''); setSaving(true);
     try {
       await saveRecord({
@@ -149,8 +151,7 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
         project_id: projectId,
         date,
         package: pkg || null,
-        manpower_total: effectiveTotal,
-        manpower_detail: roles,
+        hr_detail: roles,
         activities: activities.filter(a => a.activity),
         reported_by: reporterName || null,
         source: 'form',
@@ -165,29 +166,28 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
 
   return (
     <div className={g.entrySection}>
-      <Eyebrow>Manpower & Activities</Eyebrow>
+      <Eyebrow>Human Resource & Activities</Eyebrow>
 
       <div className={g.fieldRow}>
         <label>Package</label>
         <SearchSelect items={workPackages} value={pkg} onChange={setPkg} placeholder="All / General" />
       </div>
 
-      <Stepper label="Total manpower on site" value={manpowerTotal} onChange={setManpowerTotal} />
-
-      <details className={s.rolesSection}>
-        <summary>Role breakdown <span className={g.hint}>(optional)</span></summary>
-        <div className={s.rolesGrid}>
-          {Object.keys(roles).map(role => (
-            <Stepper key={role} label={role} value={roles[role]} onChange={v => setRole(role, v)} />
-          ))}
-        </div>
-        {roleTotal > 0 && (
-          <p style={{ color: 'var(--go)', fontWeight: 600, fontSize: 13 }}>Role sum: {roleTotal}</p>
+      <div className={s.rolesSection}>
+        <p className={g.hint} style={{ marginBottom: 8 }}>Human Resource on site</p>
+        {hrRoleNames.length === 0 ? (
+          <p className={g.hintNote}>No Human Resource roles configured for this project yet — ask an admin to add them in Edit Project.</p>
+        ) : (
+          <div className={s.rolesGrid}>
+            {hrRoleNames.map(role => (
+              <Stepper key={role} label={role} value={roles[role] ?? 0} onChange={v => setRole(role, v)} />
+            ))}
+          </div>
         )}
-        {roleTotal > 0 && roleTotal !== manpowerTotal && manpowerTotal > 0 && (
-          <p className={g.hintNote}>Role sum = {roleTotal}. Total above overrides.</p>
+        {hrRoleNames.length > 0 && (
+          <p style={{ color: 'var(--go)', fontWeight: 600, fontSize: 13 }}>Total: {hrTotal}</p>
         )}
-      </details>
+      </div>
 
       <div className={g.actsHeader}>
         <span>Activities</span>
@@ -535,7 +535,7 @@ export default function FieldEntry() {
           <>
             <div className={g.subtabs}>
               <button className={cx(g.pill, tab === 'mis' && g.on, tab === 'mis' && g.ov)} onClick={() => setTab('mis')}>
-                MIS — Manpower
+                MIS — Human Resource
               </button>
               <button className={cx(g.pill, tab === 'blocker' && g.on)} onClick={() => setTab('blocker')}>
                 Blockers
@@ -545,6 +545,7 @@ export default function FieldEntry() {
             <div className={g.card}>
               {tab === 'mis' && (
                 <MisForm
+                  key={projectId}
                   projectId={projectId} projectName={project?.name}
                   config={config}
                   liveZones={liveZones}

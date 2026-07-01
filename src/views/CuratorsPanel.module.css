@@ -110,24 +110,23 @@
 .fieldGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px }
 @media (max-width: 540px) { .fieldGrid { grid-template-columns: 1fr } }
 
-/* ── Manpower block ──────────────────────────────────────────── */
-.mpBlock {
+/* ── Human Resource block ────────────────────────────────────── */
+.hrBlock {
   background: var(--field); border-radius: 8px; padding: 12px 14px;
   margin-bottom: 14px; border: 1px solid var(--line);
 }
-.mpRow { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap }
-.mpLabel { font-size: 10px; color: var(--steel); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px }
-.mpInput {
+.hrRow { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap }
+.hrLabel { font-size: 10px; color: var(--steel); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px }
+.hrTotal {
   font-family: var(--mono); font-weight: 700; font-size: 26px;
-  width: 100px; border: none; background: transparent; color: var(--blue);
-  padding: 0; outline: none;
+  color: var(--blue);
 }
-.mpDetail { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; padding-bottom: 4px }
-.mpChip {
+.hrDetail { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; padding-bottom: 4px }
+.hrChip {
   background: var(--card); border: 1px solid var(--line); border-radius: 5px;
   padding: 4px 10px; font-size: 12px; color: var(--ink);
 }
-.mpChip strong { font-weight: 700; font-family: var(--mono); color: var(--blue) }
+.hrChip strong { font-weight: 700; font-family: var(--mono); color: var(--blue) }
 
 /* ── Role steppers ───────────────────────────────────────────── */
 .rolesGrid { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 8px }

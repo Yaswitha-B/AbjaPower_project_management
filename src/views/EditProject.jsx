@@ -110,6 +110,7 @@ export default function EditProject() {
   const [zones, setZones]           = useState([]);
   const [packages, setPackages]     = useState([]);
   const [activities, setActivities] = useState([]);
+  const [hrRoles, setHrRoles]       = useState([]);
   const [contacts, setContacts]     = useState([]);
   const [saving, setSaving]         = useState(false);
   const [error, setError]           = useState('');
@@ -126,6 +127,7 @@ export default function EditProject() {
         setZones(p.towers ?? []);
         setPackages(p.work_packages ?? []);
         setActivities(p.activity_types ?? []);
+        setHrRoles(p.hr_roles ?? []);
         setContacts(d.contacts ?? []);
       })
       .catch(() => setError('Failed to load project'))
@@ -150,6 +152,7 @@ export default function EditProject() {
           towers: zones,
           work_packages: packages,
           activity_types: activities,
+          hr_roles: hrRoles,
         }),
         saveRecord({
           type: 'contacts_replace',
@@ -245,6 +248,11 @@ export default function EditProject() {
           <Eyebrow>Scope</Eyebrow>
           <TagList label="Zones" hint="site structure" items={zones} onChange={setZones} placeholder="Tower 1, Podium, B1…  then press Enter" />
           <TagList label="Work packages" hint="groups for MIS reporting" items={packages} onChange={setPackages} placeholder="MEP, HVAC, Fire Fighting…  then press Enter" />
+        </div>
+
+        <div className={g.card} style={{ marginTop: 16 }}>
+          <Eyebrow>Human Resource roles</Eyebrow>
+          <TagList label="Human Resource roles" items={hrRoles} onChange={setHrRoles} placeholder="Engineer, Welder, Project Manager…  then press Enter" />
         </div>
 
         <div className={g.card} style={{ marginTop: 16 }}>
