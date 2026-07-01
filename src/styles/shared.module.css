@@ -171,6 +171,14 @@
   align-items: center; margin-bottom: 6px;
 }
 .actRow input { min-width: 0 }
+@media (max-width: 480px) {
+  .actsColHead { display: none }
+  .actRow { grid-template-columns: 1fr 1fr; grid-template-areas: "activity activity" "zone area" "rm rm"; }
+  .actRow > :nth-child(1) { grid-area: activity }
+  .actRow > :nth-child(2) { grid-area: zone }
+  .actRow > :nth-child(3) { grid-area: area }
+  .actRow > :nth-child(4) { grid-area: rm; justify-self: end }
+}
 
 .newActInline { display: flex; gap: 6px; flex: 1; min-width: 0; align-items: center }
 .newActInline input { flex: 1; min-width: 0 }
