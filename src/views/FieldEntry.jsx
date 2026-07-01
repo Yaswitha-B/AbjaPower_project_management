@@ -101,18 +101,50 @@ function ActivityRow({ row, zones, activityTypes, onChange, onRemove, onAddActiv
 }
 
 function WaPreview({ text }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2200); });
-  };
   return (
     <div className={s.waPreview}>
       <div className={s.waHeader}>
         <span>WhatsApp message</span>
-        <button type="button" onClick={copy}>{copied ? 'Copied!' : 'Copy'}</button>
       </div>
       <pre>{text}</pre>
     </div>
+  );
+}
+
+// Submitting and copying are one action — a lone "Copy" button let people copy the
+// message, think they were done, and never actually save it. "Submit & Copy" saves
+// first, only copies on success. "Copy again" always re-copies the exact text that
+// was actually saved (frozen at submit time), even if the form is edited afterward —
+// it can never trigger another save.
+function SubmitCopyBar({ text, saving, error, onSubmit }) {
+  const [copied, setCopied]                 = useState(false);
+  const [submittedText, setSubmittedText]   = useState(null);
+
+  const copy = (value) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    });
+  };
+
+  const handleSubmit = async () => {
+    const ok = await onSubmit();
+    if (ok) { setSubmittedText(text); copy(text); }
+  };
+
+  return (
+    <>
+      {error && <p className={g.formError}>⚠ {error}</p>}
+      <button className={g.saveBtn} onClick={handleSubmit} disabled={saving}>
+        {saving ? 'Saving…' : 'Submit & Copy'}
+      </button>
+      {submittedText != null && (
+        <button type="button" className={s.recopyBtn} onClick={() => copy(submittedText)}>
+          Copy again
+        </button>
+      )}
+      {copied && <p className={s.copiedNote}>✓ Copied — paste into WhatsApp</p>}
+    </>
   );
 }
 
@@ -143,7 +175,7 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
   const setRole   = (role, v) => setRoles(r => ({ ...r, [role]: v }));
 
   const save = async () => {
-    if (!date) return setError('Date is required');
+    if (!date) { setError('Date is required'); return false; }
     setError(''); setSaving(true);
     try {
       await saveRecord({
@@ -157,8 +189,10 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
         source: 'form',
       });
       onSaved('MIS entry saved');
+      return true;
     } catch (e) {
       setError(e.message || 'Save failed');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -216,10 +250,7 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
 
       <WaPreview text={message} />
 
-      {error && <p className={g.formError}>⚠ {error}</p>}
-      <button className={g.saveBtn} onClick={save} disabled={saving}>
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      <SubmitCopyBar text={message} saving={saving} error={error} onSubmit={save} />
     </div>
   );
 }
@@ -260,11 +291,11 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
   const changeMode = (m) => { setMode(m); setSelectedId(''); setError(''); };
 
   const save = async () => {
-    if (!date) return setError('Date is required');
+    if (!date) { setError('Date is required'); return false; }
     setError(''); setSaving(true);
     try {
       if (mode === 'new') {
-        if (!description.trim()) { setSaving(false); return setError('Description required'); }
+        if (!description.trim()) { setSaving(false); setError('Description required'); return false; }
         await saveRecord({
           type: 'issue_new',
           project_id: projectId,
@@ -283,7 +314,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
         });
         setDescription(''); setOwnerName(''); setNeededBy(''); setWaitingOn(''); setPriority('');
       } else {
-        if (!selectedId) { setSaving(false); return setError('Select an issue'); }
+        if (!selectedId) { setSaving(false); setError('Select an issue'); return false; }
         await saveRecord({
           type: 'issue_update',
           id: selectedId,
@@ -302,8 +333,10 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
       }
       setNote(''); setPhotoInGroup(false);
       onSaved('Blocker saved');
+      return true;
     } catch (e) {
       setError(e.message || 'Save failed');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -436,10 +469,7 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
 
       <WaPreview text={message} />
 
-      {error && <p className={g.formError}>⚠ {error}</p>}
-      <button className={g.saveBtn} onClick={save} disabled={saving}>
-        {saving ? 'Saving…' : 'Save'}
-      </button>
+      <SubmitCopyBar text={message} saving={saving} error={error} onSubmit={save} />
     </div>
   );
 }
