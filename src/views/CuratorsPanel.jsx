@@ -5,7 +5,8 @@ import {
   fetchProject, fetchSightings, saveRecord,
 } from '../api/client.js';
 import { fmtDate } from '../lib/format.js';
-import { CURATOR_KEY, ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
+import { ISSUE_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
+import { useAuth } from '../lib/AuthContext.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
 import s from './CuratorsPanel.module.css';
@@ -88,7 +89,7 @@ function ActivityTable({ activities }) {
   );
 }
 
-function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total, curatorName }) {
+function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total }) {
   const [date, setDate]       = useState(row.date?.slice(0, 10) ?? '');
   const [pkg, setPkg]         = useState(row.package ?? '');
   const [reporter, setRep]    = useState(row.reported_by ?? '');
@@ -151,7 +152,6 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
         hr_detail: roles,
         activities: activities.filter(a => a.activity),
         reported_by: reporter || undefined,
-        curator_name: curatorName || null,
       });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (e) { setError(e.message || 'Save failed'); }
@@ -162,9 +162,9 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
     setSaving(true);
     try {
       if (row.verified_at) {
-        await saveRecord({ type: 'mis_unverify', id: row.id, curator_name: curatorName || null });
+        await saveRecord({ type: 'mis_unverify', id: row.id });
       } else {
-        await saveRecord({ type: 'mis_verify', id: row.id, verified_by: curatorName || null });
+        await saveRecord({ type: 'mis_verify', id: row.id });
       }
       onVerified();
     } catch { setSaving(false); }
@@ -336,7 +336,7 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
         resolved_date: resolvedDate || null,
         raised_date: raisedDate || undefined, recur,
         priority: priority || null,
-        curator_name: curatorName || null,
+        reported_by: curatorName || undefined,
       });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
       fetchSightings(issue.id).then(d => setSightings(d.sightings ?? [])).catch(() => {});
@@ -348,9 +348,9 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
     setSaving(true);
     try {
       if (issue.verified_at) {
-        await saveRecord({ type: 'issue_unverify', id: issue.id, curator_name: curatorName || null });
+        await saveRecord({ type: 'issue_unverify', id: issue.id });
       } else {
-        await saveRecord({ type: 'issue_verify', id: issue.id, verified_by: curatorName || null });
+        await saveRecord({ type: 'issue_verify', id: issue.id });
       }
       onVerified();
     } catch { setSaving(false); }
@@ -523,6 +523,11 @@ function matchesSearch(item, q) {
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export default function CuratorsPanel() {
+  const { user } = useAuth();
+  // Pre-filled from login, left editable — same reasoning as Field Entry's
+  // reporter name: a shared device or a correction shouldn't be blocked.
+  const [curatorName, setCurator] = useState(() => user.name || user.email);
+
   const [tab, setTab]             = useState('mis');
   const [verFilter, setVerFilter] = useState('unverified');
   const [search, setSearch]       = useState('');
@@ -535,7 +540,6 @@ export default function CuratorsPanel() {
   const [misFull, setMisFull]     = useState(null);
   const [issFull, setIssFull]     = useState(null);
   const [selected, setSelected]   = useState(0);
-  const [curatorName, setCurator] = useState(() => sessionStorage.getItem(CURATOR_KEY) ?? '');
   const [projectConfigs, setConfigs]   = useState({});
   const [projectContacts, setPContacts] = useState({});
 
@@ -568,8 +572,6 @@ export default function CuratorsPanel() {
 
   // Reset list position whenever any filter changes
   useEffect(() => { setSelected(0); }, [search, projectFilter, stageFilter, verFilter, dateFrom, dateTo]);
-
-  const saveCurator = (name) => { setCurator(name); sessionStorage.setItem(CURATOR_KEY, name); };
 
   // Base list driven by verification filter
   const misBase = verFilter === 'unverified' ? (misQueue ?? [])
@@ -650,10 +652,10 @@ export default function CuratorsPanel() {
                 </button>
               </div>
 
-              {/* Curator identity */}
+              {/* Curator identity — pre-filled from login, editable */}
               <div className={s.curatorRow}>
                 <label>Curating as</label>
-                <input value={curatorName} onChange={e => saveCurator(e.target.value)} placeholder="Your name…" />
+                <input value={curatorName} onChange={e => setCurator(e.target.value)} placeholder="Your name…" />
               </div>
 
               {/* Filter controls */}
@@ -766,7 +768,6 @@ export default function CuratorsPanel() {
                 key={item.id}
                 row={item}
                 projectConfig={projectConfigs[item.project_id]}
-                curatorName={curatorName}
                 idx={selected} total={queue.length}
                 onVerified={onVerified}
                 onPrev={() => advance(-1)}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fetchPortfolio, fetchProject, saveRecord } from '../api/client.js';
 import { TOAST_MS, REPORTER_STAGES, ISSUE_OWNER_TYPES, STAGE_COLORS, PRIORITY_LEVELS } from '../lib/constants.js';
+import { useAuth } from '../lib/AuthContext.jsx';
 import Eyebrow from '../components/Eyebrow.jsx';
 import SearchSelect from '../components/SearchSelect.jsx';
 import g from '../styles/shared.module.css';
@@ -62,7 +63,7 @@ function Stepper({ label, value, onChange }) {
 
 function zoneLabel(z) { return typeof z === 'string' ? z : z?.name ?? String(z); }
 
-function ActivityRow({ row, zones, activityTypes, onChange, onRemove, onAddActivity, onAddZone }) {
+function ActivityRow({ row, zones, activityTypes, onChange, onRemove, onAddActivity }) {
   return (
     <div
       className={g.actRow}
@@ -80,20 +81,18 @@ function ActivityRow({ row, zones, activityTypes, onChange, onRemove, onAddActiv
         placeholder="Activity *"
         addLabel="activity"
       />
+      {/* Zone is search-only — no "add new" here, the project's zone list is admin-managed */}
       <SearchSelect
         items={zones.map(zoneLabel)}
         value={row.tower}
         onChange={v => onChange({ ...row, tower: v })}
-        onAdd={onAddZone}
         placeholder="Zone (opt)"
-        addLabel="zone"
       />
       <input
         aria-label="Area"
         placeholder="Area (opt)"
         value={row.area}
         onChange={e => onChange({ ...row, area: e.target.value })}
-        style={{ flex: '0 0 100px', minWidth: 0 }}
       />
       <button type="button" className={g.rmBtn} onClick={onRemove} title="Remove row">×</button>
     </div>
@@ -111,14 +110,14 @@ function WaPreview({ text }) {
   );
 }
 
-// Submitting and copying are one action — a lone "Copy" button let people copy the
-// message, think they were done, and never actually save it. "Submit & Copy" saves
-// first, only copies on success. "Copy again" always re-copies the exact text that
-// was actually saved (frozen at submit time), even if the form is edited afterward —
-// it can never trigger another save.
+// One button, two states — a lone "Copy" button let people copy the message, think
+// they were done, and never actually save it. Before the first successful save this
+// button submits then copies. After that, it becomes copy-only — it can never
+// resubmit and re-copies the exact text that was actually saved (frozen at submit
+// time), even if the form is edited afterward. Only a page reload resets it.
 function SubmitCopyBar({ text, saving, error, onSubmit }) {
-  const [copied, setCopied]                 = useState(false);
-  const [submittedText, setSubmittedText]   = useState(null);
+  const [copied, setCopied]               = useState(false);
+  const [submittedText, setSubmittedText] = useState(null);
 
   const copy = (value) => {
     navigator.clipboard.writeText(value).then(() => {
@@ -127,30 +126,27 @@ function SubmitCopyBar({ text, saving, error, onSubmit }) {
     });
   };
 
-  const handleSubmit = async () => {
+  const handleClick = async () => {
+    if (submittedText != null) { copy(submittedText); return; }
     const ok = await onSubmit();
     if (ok) { setSubmittedText(text); copy(text); }
   };
 
+  const label = saving ? 'Saving…' : submittedText != null ? (copied ? 'Copied!' : 'Copy again') : 'Submit & Copy';
+
   return (
     <>
       {error && <p className={g.formError}>⚠ {error}</p>}
-      <button className={g.saveBtn} onClick={handleSubmit} disabled={saving}>
-        {saving ? 'Saving…' : 'Submit & Copy'}
+      <button className={g.saveBtn} onClick={handleClick} disabled={saving}>
+        {label}
       </button>
-      {submittedText != null && (
-        <button type="button" className={s.recopyBtn} onClick={() => copy(submittedText)}>
-          Copy again
-        </button>
-      )}
-      {copied && <p className={s.copiedNote}>✓ Copied — paste into WhatsApp</p>}
     </>
   );
 }
 
 // ── MIS form ───────────────────────────────────────────────────────────────────
 
-function MisForm({ projectId, projectName, config, liveZones, liveActivities, onAddZone, onAddActivity, date, reporterName, onSaved }) {
+function MisForm({ projectId, projectName, config, liveZones, liveActivities, onAddActivity, date, reporterName, onSaved }) {
   const workPackages = config?.work_packages ?? [];
   const hrRoleNames   = config?.hr_roles ?? [];
 
@@ -207,8 +203,9 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
         <SearchSelect items={workPackages} value={pkg} onChange={setPkg} placeholder="All / General" />
       </div>
 
-      <div className={s.rolesSection}>
-        <p className={g.hint} style={{ marginBottom: 8 }}>Human Resource on site</p>
+      <div className={s.hrBlock}>
+        <div className={s.hrLabel}>Human Resource on site</div>
+        <div className={s.hrTotal}>{hrTotal}</div>
         {hrRoleNames.length === 0 ? (
           <p className={g.hintNote}>No Human Resource roles configured for this project yet — ask an admin to add them in Edit Project.</p>
         ) : (
@@ -218,9 +215,6 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
             ))}
           </div>
         )}
-        {hrRoleNames.length > 0 && (
-          <p style={{ color: 'var(--go)', fontWeight: 600, fontSize: 13 }}>Total: {hrTotal}</p>
-        )}
       </div>
 
       <div className={g.actsHeader}>
@@ -228,11 +222,11 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
         <button type="button" className={g.addBtn} onClick={addRow}>+ Add row</button>
       </div>
       {activities.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, padding: '0 0 4px 8px', marginLeft: -8 }}>
-          <span style={{ flex: 1, fontSize: 10, color: 'var(--steel)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>Activity *</span>
-          <span style={{ flex: 1, fontSize: 10, color: 'var(--steel)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>Zone</span>
-          <span style={{ flex: '0 0 100px', fontSize: 10, color: 'var(--steel)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em' }}>Area</span>
-          <span style={{ width: 28 }} />
+        <div className={g.actsColHead}>
+          <span>Activity *</span>
+          <span>Zone</span>
+          <span>Area</span>
+          <span />
         </div>
       )}
 
@@ -244,7 +238,6 @@ function MisForm({ projectId, projectName, config, liveZones, liveActivities, on
           onChange={v => updateRow(i, v)}
           onRemove={() => removeRow(i)}
           onAddActivity={onAddActivity}
-          onAddZone={onAddZone}
         />
       ))}
 
@@ -477,6 +470,8 @@ function BlockerForm({ projectId, projectName, openIssues, contacts, date, repor
 // ── Main view ──────────────────────────────────────────────────────────────────
 
 export default function FieldEntry() {
+  const { user } = useAuth();
+
   const [projects, setProjects]             = useState([]);
   const [projectId, setProjectId]           = useState('');
   const [config, setConfig]                 = useState(null);
@@ -485,7 +480,9 @@ export default function FieldEntry() {
   const [openIssues, setOpenIssues]         = useState([]);
   const [contacts, setContacts]             = useState([]);
   const [date, setDate]                     = useState(new Date().toISOString().slice(0, 10));
-  const [reporterName, setReporter]         = useState('');
+  // Pre-filled from login, left editable — a phone may be shared, or the
+  // logged-in name may need correcting for this particular entry.
+  const [reporterName, setReporter]         = useState(() => user.name || user.email);
   const [tab, setTab]                       = useState('mis');
   const [toast, setToast]                   = useState('');
 
@@ -507,16 +504,6 @@ export default function FieldEntry() {
   const project = projects.find(p => p.id === projectId);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), TOAST_MS); };
-
-  const handleAddZone = async (zone) => {
-    if (liveZones.includes(zone)) return;
-    setLiveZones(prev => [...prev, zone]);
-    try {
-      await saveRecord({ type: 'project_add_zone', project_id: projectId, zone });
-    } catch {
-      setLiveZones(prev => prev.filter(z => z !== zone));
-    }
-  };
 
   const handleAddActivity = async (activity) => {
     if (liveActivities.includes(activity)) return;
@@ -580,7 +567,6 @@ export default function FieldEntry() {
                   config={config}
                   liveZones={liveZones}
                   liveActivities={liveActivities}
-                  onAddZone={handleAddZone}
                   onAddActivity={handleAddActivity}
                   date={date} reporterName={reporterName}
                   onSaved={showToast}
