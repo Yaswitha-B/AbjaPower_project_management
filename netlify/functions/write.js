@@ -10,38 +10,83 @@ import {
   markIssueUnverified, markMisUnverified,
   logActivity,
   upsertUserRole, deleteUserRole,
+  getIssueProjectId, getMisRowProjectId,
 } from '../../lib/db.js';
 import { verifySession } from '../../lib/auth.js';
+
+// Which project a given write concerns, for project-scope enforcement below.
+// Types not listed here (login, user_upsert, user_remove, project_new) aren't
+// scoped to an existing project. For edits-by-id, this looks up the entity's
+// current project rather than trusting anything the client sends.
+async function resolveProjectId(type, data) {
+  switch (type) {
+    case 'mis_row':
+    case 'issue_new':
+    case 'project_add_activity':
+    case 'project_add_zone':
+    case 'contacts_replace':
+      return data.project_id ?? null;
+    case 'project_edit':
+    case 'project_delete':
+      return data.id ?? null;
+    case 'issue_update':
+    case 'issue_patch':
+    case 'issue_verify':
+    case 'issue_unverify':
+      return data.id ? getIssueProjectId(data.id) : null;
+    case 'mis_update':
+    case 'mis_verify':
+    case 'mis_unverify':
+      return data.id ? getMisRowProjectId(data.id) : null;
+    case 'sighting':
+      return data.issue_id ? getIssueProjectId(data.issue_id) : null;
+    default:
+      return null;
+  }
+}
 
 export default async (req) => {
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const user = await verifySession(req);
-  if (!user) return Response.json({ error: 'Not authorized' }, { status: 401 });
-
-  // Single source of truth for "who did this" — never trust a client-sent name.
-  const actor = user.name || user.email;
-
-  let body;
   try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
+    const user = await verifySession(req);
+    if (!user) return Response.json({ error: 'Not authorized' }, { status: 401 });
 
-  const { type, ...data } = body;
+    // Single source of truth for "who did this" — never trust a client-sent name.
+    const actor = user.name || user.email;
 
-  // Reporters are confined to what Field Entry actually does — everything
-  // else (curation, verification, project/user management) requires
-  // admin or curator. Checked once, here, rather than per-case below.
-  const REPORTER_ALLOWED_TYPES = ['login', 'mis_row', 'issue_new', 'issue_update', 'project_add_activity'];
-  if (user.role === 'reporter' && !REPORTER_ALLOWED_TYPES.includes(type)) {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
-  try {
+    const { type, ...data } = body;
+
+    // Role gates for `type`, checked once here rather than scattered per-case —
+    // one mechanism for both directions (what reporters may do, what only
+    // admins may do), not two different patterns for the same kind of problem.
+    const REPORTER_ALLOWED_TYPES = ['login', 'mis_row', 'issue_new', 'issue_update', 'project_add_activity'];
+    const ADMIN_ONLY_TYPES = ['user_upsert', 'user_remove'];
+    if (user.role === 'reporter' && !REPORTER_ALLOWED_TYPES.includes(type)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    if (ADMIN_ONLY_TYPES.includes(type) && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Empty project_ids means "all projects" — only check when it's actually
+    // been narrowed to a specific set.
+    if (user.project_ids?.length) {
+      const scopedProjectId = await resolveProjectId(type, data);
+      if (scopedProjectId && !user.project_ids.includes(scopedProjectId)) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     switch (type) {
       case 'login': {
         await logActivity({
@@ -52,20 +97,18 @@ export default async (req) => {
       }
 
       case 'user_upsert': {
-        if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
-        const { email, name, role } = data;
+        const { email, name, role, project_ids } = data;
         if (!email || !role) return Response.json({ error: 'email and role required' }, { status: 400 });
-        const result = await upsertUserRole({ email, name, role });
+        const result = await upsertUserRole({ email, name, role, project_ids });
         await logActivity({
           actor, actor_role: user.role, action: 'user_role_set',
           entity_type: 'user', entity_id: result.email, project_id: null,
-          detail: { role },
+          detail: { role, project_ids: result.project_ids },
         });
         return Response.json({ ok: true, user: result });
       }
 
       case 'user_remove': {
-        if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
         const { email } = data;
         if (!email) return Response.json({ error: 'email required' }, { status: 400 });
         const removed = await deleteUserRole(email);
@@ -313,8 +356,10 @@ export default async (req) => {
         return Response.json({ error: `Unknown type: ${type}` }, { status: 400 });
     }
   } catch (err) {
+    // Log the real error server-side only — echoing err.message to the client
+    // can leak internal schema/constraint details (e.g. raw Postgres errors).
     console.error('write error', err);
-    return Response.json({ error: err.message ?? 'Internal error' }, { status: 500 });
+    return Response.json({ error: 'Internal error' }, { status: 500 });
   }
 };
 
