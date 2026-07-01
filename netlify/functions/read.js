@@ -4,15 +4,33 @@ import {
   getIssues, getOpenIssues, getCertEvents, getLatestSignals,
   getContacts, getAllMisRows, getAllIssues,
   getUnverifiedMis, getUnverifiedIssues, getSightings,
+  getAllUserRoles,
 } from '../../lib/db.js';
+import { verifySession } from '../../lib/auth.js';
 
 export default async (req) => {
+  const user = await verifySession(req);
+  if (!user) return Response.json({ error: 'Not authorized' }, { status: 401 });
+
   const url      = new URL(req.url);
   const id       = url.searchParams.get('project');
   const curator  = url.searchParams.get('curator');
   const issueId  = url.searchParams.get('sightings');
+  const admin    = url.searchParams.get('admin');
+
+  // Reporters get portfolio/project reads (what Field Entry needs) — not the
+  // curator queue, issue history, or admin data, even via a direct API call.
+  if (user.role === 'reporter' && (curator || admin || issueId)) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
+    if (admin === 'users') {
+      if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const users = await getAllUserRoles();
+      return Response.json({ users });
+    }
+
     if (issueId) {
       const sightings = await getSightings(issueId);
       return Response.json({ sightings });

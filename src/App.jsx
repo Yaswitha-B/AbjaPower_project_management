@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { fetchPortfolio } from './api/client.js';
+import { useAuth } from './lib/AuthContext.jsx';
 import Overview from './views/Overview.jsx';
 import ProjectView from './views/ProjectView.jsx';
 import FieldEntry from './views/FieldEntry.jsx';
@@ -8,21 +9,26 @@ import Curation from './views/Curation.jsx';
 import CuratorsPanel from './views/CuratorsPanel.jsx';
 import NewProject from './views/NewProject.jsx';
 import EditProject from './views/EditProject.jsx';
+import AdminUsers from './views/AdminUsers.jsx';
 import Login from './views/Login.jsx';
 import s from './App.module.css';
 import g from './styles/shared.module.css';
 import { cx } from './lib/cx.js';
-import { AUTH_KEY } from './lib/constants.js';
 
-function isAuthed() {
-  return localStorage.getItem(AUTH_KEY) === '1';
+// roles omitted = any logged-in role. Failing the check always lands on
+// /entry — the one page every role is guaranteed to have access to.
+function RequireAuth({ roles, children }) {
+  const { user, checking } = useAuth();
+  if (checking) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/entry" replace />;
+  return children;
 }
 
-function RequireAuth({ children }) {
-  return isAuthed() ? children : <Navigate to="/login" replace />;
-}
+function TopBar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-function TopBar({ onLogout }) {
   return (
     <div className={s.top}>
       <div className={cx(g.wrap, s.topInner)}>
@@ -30,10 +36,13 @@ function TopBar({ onLogout }) {
           <b>ABJA</b> Power
           <span>Project Review Board</span>
         </div>
-        {isAuthed() && (
-          <button onClick={onLogout} className={s.logoutBtn}>
-            Log out
-          </button>
+        {user && (
+          <div className={s.topInner} style={{ gap: 12 }}>
+            <span style={{ fontSize: 12.5, color: 'var(--steel)' }}>{user.name || user.email}</span>
+            <button onClick={() => { logout(); navigate('/login'); }} className={s.logoutBtn}>
+              Log out
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -58,11 +67,13 @@ function NavPill({ to, active, children, accent, badge }) {
 
 function Nav({ projects }) {
   const { pathname } = useLocation();
+  const { user }     = useAuth();
 
   const isEntry    = pathname === '/entry';
   const isCuration = pathname === '/curation';
   const isCurator  = pathname === '/curator';
   const isNewProj  = pathname === '/projects/new';
+  const isUsers    = pathname === '/admin/users';
   const isOverview = pathname === '/';
 
   const totalOpen = projects.reduce((s, p) => s + Number(p.open_blockers ?? 0), 0);
@@ -96,6 +107,9 @@ function Nav({ projects }) {
         </NavPill>
         <NavPill to="/curation" active={isCuration}>Curation</NavPill>
         <NavPill to="/projects/new" active={isNewProj}>+ Project</NavPill>
+        {user?.role === 'admin' && (
+          <NavPill to="/admin/users" active={isUsers}>Users</NavPill>
+        )}
       </div>
     </nav>
   );
@@ -103,42 +117,29 @@ function Nav({ projects }) {
 
 export default function App() {
   const [projects, setProjects] = useState([]);
-  const [authed, setAuthed]     = useState(isAuthed());
-  const navigate                = useNavigate();
+  const { user, login }         = useAuth();
 
   useEffect(() => {
-    if (!authed) return;
+    if (!user) return;
     fetchPortfolio()
       .then((d) => setProjects(d.projects ?? []))
       .catch(() => {});
-  }, [authed]);
-
-  const handleLogout = () => {
-    localStorage.removeItem(AUTH_KEY);
-    setAuthed(false);
-    navigate('/login');
-  };
-
-  const handleLogin = () => {
-    setAuthed(true);
-    fetchPortfolio()
-      .then((d) => setProjects(d.projects ?? []))
-      .catch(() => {});
-  };
+  }, [user]);
 
   return (
     <>
-      {authed && <TopBar onLogout={handleLogout} />}
-      {authed && <Nav projects={projects} />}
+      {user && <TopBar />}
+      {user && user.role !== 'reporter' && <Nav projects={projects} />}
       <Routes>
-        <Route path="/login" element={<Login onSuccess={handleLogin} />} />
-        <Route path="/" element={<RequireAuth><Overview /></RequireAuth>} />
-        <Route path="/projects/new" element={<RequireAuth><NewProject /></RequireAuth>} />
-        <Route path="/projects/:id/edit" element={<RequireAuth><EditProject /></RequireAuth>} />
-        <Route path="/projects/:id" element={<RequireAuth><ProjectView /></RequireAuth>} />
+        <Route path="/login" element={<Login onSuccess={login} />} />
+        <Route path="/" element={<RequireAuth roles={['admin', 'curator']}><Overview /></RequireAuth>} />
+        <Route path="/projects/new" element={<RequireAuth roles={['admin', 'curator']}><NewProject /></RequireAuth>} />
+        <Route path="/projects/:id/edit" element={<RequireAuth roles={['admin', 'curator']}><EditProject /></RequireAuth>} />
+        <Route path="/projects/:id" element={<RequireAuth roles={['admin', 'curator']}><ProjectView /></RequireAuth>} />
         <Route path="/entry" element={<RequireAuth><FieldEntry /></RequireAuth>} />
-        <Route path="/curation" element={<RequireAuth><Curation /></RequireAuth>} />
-        <Route path="/curator" element={<RequireAuth><CuratorsPanel /></RequireAuth>} />
+        <Route path="/curation" element={<RequireAuth roles={['admin', 'curator']}><Curation /></RequireAuth>} />
+        <Route path="/curator" element={<RequireAuth roles={['admin', 'curator']}><CuratorsPanel /></RequireAuth>} />
+        <Route path="/admin/users" element={<RequireAuth roles={['admin']}><AdminUsers /></RequireAuth>} />
       </Routes>
     </>
   );

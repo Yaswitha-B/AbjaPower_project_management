@@ -4,8 +4,6 @@
 export const REPORT_WARN_DAYS = 3;    // days since last MIS → amber freshness
 export const REPORT_STOP_DAYS = 7;    // days since last MIS → red freshness
 export const TOAST_MS         = 3000; // success toast auto-dismiss
-export const AUTH_KEY         = 'abja_auth';
-export const CURATOR_KEY      = 'abja_curator_name';
 export const HIST_SOURCE      = 'steward'; // MIS source tag for historical seeded data
 
 // ── Issue stage enum ─────────────────────────────────────────────────────────
@@ -41,3 +39,11 @@ export const STAGE_COLORS = {
   updated:  'var(--blue2)',
   resolved: 'var(--go)',
 };
+
+// ── User role enum ───────────────────────────────────────────────────────────
+// AUTHORITATIVE list — must match the CHECK constraint on user_roles.role.
+export const USER_ROLES = [
+  { value: 'admin',    label: 'Admin' },
+  { value: 'curator',  label: 'Curator' },
+  { value: 'reporter', label: 'Reporter' },
+];
