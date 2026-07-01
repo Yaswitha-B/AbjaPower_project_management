@@ -151,6 +151,7 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
         hr_detail: roles,
         activities: activities.filter(a => a.activity),
         reported_by: reporter || undefined,
+        curator_name: curatorName || null,
       });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
     } catch (e) { setError(e.message || 'Save failed'); }
@@ -161,7 +162,7 @@ function MisDetail({ row, projectConfig, onVerified, onPrev, onNext, idx, total,
     setSaving(true);
     try {
       if (row.verified_at) {
-        await saveRecord({ type: 'mis_unverify', id: row.id });
+        await saveRecord({ type: 'mis_unverify', id: row.id, curator_name: curatorName || null });
       } else {
         await saveRecord({ type: 'mis_verify', id: row.id, verified_by: curatorName || null });
       }
@@ -335,8 +336,10 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
         resolved_date: resolvedDate || null,
         raised_date: raisedDate || undefined, recur,
         priority: priority || null,
+        curator_name: curatorName || null,
       });
       setSaved(true); setTimeout(() => setSaved(false), 2000);
+      fetchSightings(issue.id).then(d => setSightings(d.sightings ?? [])).catch(() => {});
     } catch (e) { setError(e.message || 'Save failed'); }
     finally { setSaving(false); }
   };
@@ -345,7 +348,7 @@ function IssueDetail({ issue, contacts, onVerified, onPrev, onNext, idx, total, 
     setSaving(true);
     try {
       if (issue.verified_at) {
-        await saveRecord({ type: 'issue_unverify', id: issue.id });
+        await saveRecord({ type: 'issue_unverify', id: issue.id, curator_name: curatorName || null });
       } else {
         await saveRecord({ type: 'issue_verify', id: issue.id, verified_by: curatorName || null });
       }
