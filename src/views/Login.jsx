@@ -35,7 +35,18 @@ export default function Login({ onSuccess }) {
       const { error: err } = await authClient.signIn.emailOtp({ email: email.trim(), otp: code.trim() });
       if (err) throw err;
 
-      const { user } = await checkSession();
+      // The code was correct — a failure past this point means the email
+      // isn't on the allowlist, not that the code was wrong. Worth telling
+      // people the real reason instead of "wrong code," which sends them
+      // looking for a typo that isn't there.
+      let user;
+      try {
+        ({ user } = await checkSession());
+      } catch {
+        setError("This email isn't authorized. Contact your admin for access.");
+        return;
+      }
+
       await saveRecord({ type: 'login' });
       onSuccess(user);
       // Reporters have exactly one page — land them there directly instead

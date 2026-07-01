@@ -112,12 +112,19 @@ function WaPreview({ text }) {
 
 // One button, two states — a lone "Copy" button let people copy the message, think
 // they were done, and never actually save it. Before the first successful save this
-// button submits then copies. After that, it becomes copy-only — it can never
-// resubmit and re-copies the exact text that was actually saved (frozen at submit
-// time), even if the form is edited afterward. Only a page reload resets it.
+// button submits then copies. Right after a successful save it becomes copy-only,
+// re-copying the exact text that was saved — but only for AS LONG AS the form still
+// matches what was submitted. The moment the form changes (a new blocker, an edited
+// entry) the live text diverges from the frozen submittedText and the button reverts
+// to "Submit & Copy" for the new content. Without this comparison, a reporter filing
+// a second blocker — or correcting an already-submitted entry — would find the
+// button permanently stuck on copy-only and their second submission silently never
+// saved.
 function SubmitCopyBar({ text, saving, error, onSubmit }) {
   const [copied, setCopied]               = useState(false);
   const [submittedText, setSubmittedText] = useState(null);
+
+  const alreadySubmitted = submittedText != null && submittedText === text;
 
   const copy = (value) => {
     navigator.clipboard.writeText(value).then(() => {
@@ -127,12 +134,12 @@ function SubmitCopyBar({ text, saving, error, onSubmit }) {
   };
 
   const handleClick = async () => {
-    if (submittedText != null) { copy(submittedText); return; }
+    if (alreadySubmitted) { copy(submittedText); return; }
     const ok = await onSubmit();
     if (ok) { setSubmittedText(text); copy(text); }
   };
 
-  const label = saving ? 'Saving…' : submittedText != null ? (copied ? 'Copied!' : 'Copy again') : 'Submit & Copy';
+  const label = saving ? 'Saving…' : alreadySubmitted ? (copied ? 'Copied!' : 'Copy again') : 'Submit & Copy';
 
   return (
     <>
