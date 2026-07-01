@@ -29,14 +29,14 @@
   border-radius: 8px 8px 0 0;
   transform: translateX(-50%);
 }
-.gpwd {
+.ginput {
   width: 100%; margin-top: 22px;
   font: inherit; font-size: 15px;
   border: 1px solid var(--line); border-radius: 8px;
   padding: 11px 13px; outline: none; text-align: center;
   background: var(--field);
 }
-.gpwd:focus { border-color: var(--blue); background: #fff }
+.ginput:focus { border-color: var(--blue); background: #fff }
 .gbtn {
   width: 100%; margin-top: 12px;
   background: var(--ink); color: #fff;
